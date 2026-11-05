@@ -82,10 +82,8 @@ export default function EventsPage() {
           </div>
         </div>
 
-        {/* SECTION B — FEATURED EVENT SPOTLIGHT */}
-        {featuredEvent && (
-          <EventFeatured event={featuredEvent} />
-        )}
+        {/* SECTION B — FEATURED EVENT SPOTLIGHT (LIQUID LENS CAROUSEL) */}
+        <EventFeatured events={eventsData} />
 
         {/* SECTION C & D — STATUS TABS & SEARCH FILTERS */}
         <EventFilters
