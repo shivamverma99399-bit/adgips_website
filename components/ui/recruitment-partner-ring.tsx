@@ -348,7 +348,7 @@ export function RecruitmentPartnerRing({
 
       {/* Under-Carousel Controls Bar & Clean Active Company Info */}
       <div className="mt-3 px-2 sm:px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Active Company Presentation */}
+        {/* Active Company Presentation & Interactive Navigation */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center p-1.5 bg-white/[0.95] border border-white/40 shadow-md">
             <img
@@ -358,11 +358,19 @@ export function RecruitmentPartnerRing({
             />
           </div>
           <div>
-            <span className="text-sm sm:text-base font-extrabold text-white">
-              {activePartner.name}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm sm:text-base font-extrabold text-white">
+                {activePartner.name}
+              </span>
+              <a
+                href="#opportunities"
+                className="text-[10px] font-semibold text-blue-400 hover:text-blue-300 underline"
+              >
+                View Hiring Drives &rarr;
+              </a>
+            </div>
             <p className="text-xs text-slate-400">
-              Institutional Recruitment Partner
+              Institutional Tier-1 Recruitment Partner • Campus Placements
             </p>
           </div>
         </div>

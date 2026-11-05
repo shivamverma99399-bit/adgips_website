@@ -4,7 +4,18 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Search, Calendar, Compass, BookOpen, Image as ImageIcon, UserCheck, ExternalLink } from "lucide-react";
+import {
+  X,
+  Search,
+  Calendar,
+  Compass,
+  BookOpen,
+  Image as ImageIcon,
+  UserCheck,
+  ExternalLink,
+  ShieldCheck,
+  LayoutDashboard,
+} from "lucide-react";
 import { CollegeLogo } from "@/components/ui/college-logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -28,6 +39,8 @@ export function MobileNavigation({
     { label: "Activities", href: "/activities", icon: Compass, badge: "Clubs" },
     { label: "Resources", href: "/resources", icon: BookOpen },
     { label: "Gallery", href: "/gallery", icon: ImageIcon },
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Admin CMS", href: "/admin", icon: ShieldCheck, badge: "Admin" },
   ];
 
   return (
@@ -61,7 +74,7 @@ export function MobileNavigation({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={onClose}
-                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10"
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
                   aria-label="Close navigation menu"
                 >
                   <X className="w-5 h-5" />
@@ -91,14 +104,16 @@ export function MobileNavigation({
               {/* Navigation Links */}
               <nav className="mt-6 space-y-1.5">
                 {links.map((link, i) => {
-                  const isActive = pathname === link.href;
+                  const isActive =
+                    pathname === link.href ||
+                    (link.href !== "/" && pathname.startsWith(link.href));
                   const Icon = link.icon;
                   return (
                     <motion.div
                       key={link.href}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
+                      transition={{ delay: 0.05 + i * 0.04, duration: 0.25 }}
                     >
                       <Link
                         href={link.href}
@@ -131,12 +146,12 @@ export function MobileNavigation({
               <Button
                 variant="primary"
                 size="md"
-                href="/login"
+                href="/dashboard"
                 className="w-full justify-center shadow-lg shadow-blue-600/25"
                 onClick={onClose}
               >
                 <UserCheck className="w-4 h-4 mr-2" />
-                Student Login
+                Student Dashboard
               </Button>
 
               <a

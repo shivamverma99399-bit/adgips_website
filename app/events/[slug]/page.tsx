@@ -21,6 +21,7 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/ui/event-card";
+import { EventActionButton } from "@/components/events/event-action-button";
 import { getNormalizedEventStatus, getRelatedEvents } from "@/lib/event-utils";
 
 interface EventDetailPageProps {
@@ -364,19 +365,7 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
 
               {/* Status Action CTA */}
               <div className="pt-3 border-t border-white/10">
-                {isPast ? (
-                  <div className="p-3.5 rounded-xl bg-white/10 text-slate-300 text-xs text-center font-medium border border-white/5">
-                    This event has concluded. Proceedings have been archived in the collegiate record.
-                  </div>
-                ) : event.status === "registrations_open" ? (
-                  <Button variant="primary" size="md" className="w-full justify-center">
-                    Register for Event
-                  </Button>
-                ) : (
-                  <div className="p-3.5 rounded-xl bg-blue-500/20 text-blue-300 text-xs text-center font-medium border border-blue-400/20">
-                    Scheduled institutional event. Check with your departmental coordinator for details.
-                  </div>
-                )}
+                <EventActionButton event={event} isPast={isPast} />
               </div>
             </div>
 

@@ -4,20 +4,24 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, Menu, User } from "lucide-react";
+import { Search, Menu, User, ShieldCheck } from "lucide-react";
 import { CollegeLogo } from "@/components/ui/college-logo";
 import { Button } from "@/components/ui/button";
 import { SearchModal } from "@/components/ui/search-modal";
 import { MobileNavigation } from "./mobile-navigation";
 import { cn } from "@/lib/utils";
+import { getStoredSession, StudentProfile } from "@/lib/auth";
 
 export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [session, setSession] = useState<StudentProfile | null>(null);
 
   useEffect(() => {
+    setSession(getStoredSession());
+
     const handleScroll = () => {
       if (window.scrollY > 20) {
         setScrolled(true);
@@ -26,9 +30,18 @@ export function Navbar() {
       }
     };
 
+    const handleSessionChange = () => {
+      setSession(getStoredSession());
+    };
+
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("adgips_session_change", handleSessionChange);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("adgips_session_change", handleSessionChange);
+    };
   }, []);
 
   const navLinks = [
@@ -37,6 +50,8 @@ export function Navbar() {
     { label: "Activities", href: "/activities" },
     { label: "Resources", href: "/resources" },
     { label: "Gallery", href: "/gallery" },
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Admin", href: "/admin" },
   ];
 
   return (
@@ -61,7 +76,10 @@ export function Navbar() {
           {/* Desktop Navigation Links with Smooth LayoutId Indicator */}
           <nav className="hidden lg:flex items-center gap-1 xl:gap-2 relative">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href;
+              const isActive =
+                pathname === link.href ||
+                (link.href !== "/" && pathname.startsWith(link.href));
+
               return (
                 <Link
                   key={link.href}
@@ -90,7 +108,7 @@ export function Navbar() {
             })}
           </nav>
 
-          {/* Right Action Cluster: Search + Student Login + Mobile Toggle */}
+          {/* Right Action Cluster: Search + Student Login / Dashboard + Mobile Toggle */}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Search Trigger with Micro-interaction */}
             <motion.button
@@ -107,16 +125,30 @@ export function Navbar() {
               </kbd>
             </motion.button>
 
-            {/* Student Login CTA */}
-            <Button
-              variant="primary"
-              size="sm"
-              href="/login"
-              className="hidden sm:inline-flex shadow-sm shadow-blue-500/20"
-            >
-              <User className="w-3.5 h-3.5 mr-1" />
-              <span>Student Login</span>
-            </Button>
+            {/* Student Login / Dashboard CTA */}
+            {session ? (
+              <Button
+                variant="primary"
+                size="sm"
+                href="/dashboard"
+                className="hidden sm:inline-flex shadow-sm shadow-blue-500/20 font-semibold"
+              >
+                <div className="w-4 h-4 rounded-full bg-white/20 text-[10px] font-bold flex items-center justify-center mr-1.5">
+                  {session.name[0]}
+                </div>
+                <span>Dashboard</span>
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                href="/login"
+                className="hidden sm:inline-flex shadow-sm shadow-blue-500/20"
+              >
+                <User className="w-3.5 h-3.5 mr-1" />
+                <span>Student Login</span>
+              </Button>
+            )}
 
             {/* Mobile Menu Hamburger */}
             <motion.button
