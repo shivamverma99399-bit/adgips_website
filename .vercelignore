@@ -1,0 +1,10 @@
+# Vercel deployment ignore file
+.git
+.github
+.next
+node_modules
+*_WALKTHROUGH.txt
+*.log
+.DS_Store
+# Root-level redundant copy of video (served from public/)
+/hdr-video-quality.mp4

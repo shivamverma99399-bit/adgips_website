@@ -1,0 +1,178 @@
+import { InstitutionalHighlight } from "@/types";
+
+export const institutionalHighlightsData: InstitutionalHighlight[] = [
+  {
+    id: "campus-area",
+    metric: "8.08",
+    label: "Acres Campus",
+    sublabel: "Lush green environment in Shastri Park, New Delhi",
+    description: "An eco-friendly, barrier-free metropolitan campus in East Delhi featuring 5 interconnected academic blocks spanning over 23,636 square meters of state-of-the-art educational infrastructure.",
+    category: "Infrastructure",
+    verifiedSource: "adgips.ac.in/overview",
+    icon: "Landmark",
+  },
+  {
+    id: "placement-peak",
+    metric: "44+",
+    label: "LPA Highest Package",
+    sublabel: "International & Tier-1 tech recruiters",
+    description: "Our dedicated Corporate Resource Centre (CRC) bridges academia and industry, fostering regular on-campus recruitment from Microsoft, Oracle, Infosys, TCS iON, Wipro, HCL, and Accenture.",
+    category: "Placements",
+    verifiedSource: "adgips.ac.in/placement",
+    icon: "TrendingUp",
+  },
+  {
+    id: "network-connectivity",
+    metric: "1 Gbps",
+    label: "Optical Bandwidth",
+    sublabel: "High-speed campus-wide backbone",
+    description: "Domain-specific computing and research laboratories equipped with gigabit-speed fiber, advanced workstation infrastructure, and dedicated servers for AI, Cloud, and Systems programming.",
+    category: "Infrastructure",
+    verifiedSource: "adgips.ac.in/facilities",
+    icon: "Cpu",
+  },
+  {
+    id: "accreditation-standing",
+    metric: "100%",
+    label: "Statutory Approvals",
+    sublabel: "GGSIPU Affiliated • AICTE & BCI Approved",
+    description: "Affiliated to Guru Gobind Singh Indraprastha University (GGSIPU), New Delhi. Approved by the All India Council for Technical Education (AICTE) and Bar Council of India (BCI).",
+    category: "Academics",
+    verifiedSource: "adgips.ac.in/about-adgips",
+    icon: "ShieldCheck",
+  },
+  {
+    id: "library-holdings",
+    metric: "85K+",
+    label: "Learning Resources",
+    sublabel: "Central & Digital Research Library",
+    description: "Extensive repository of textbooks, international IEEE/Springer journals, case law compendiums, and round-the-clock digital database access for students and research scholars.",
+    category: "Academics",
+    verifiedSource: "adgips.ac.in/library",
+    icon: "BookOpen",
+  },
+  {
+    id: "campus-ecosystem",
+    metric: "25+",
+    label: "Student Societies",
+    sublabel: "Clubs in Tech, Cultural, Sports & Debating",
+    description: "A vibrant co-curricular ecosystem hosting the annual Utkarsh cultural fest, technical symposiums, hackathons, and inter-university sports competitions.",
+    category: "Campus Life",
+    verifiedSource: "adgips.ac.in/student-life",
+    icon: "Users",
+  },
+];
+
+export interface PlacementRecruiter {
+  name: string;
+  tier: string;
+  role: string;
+  logo: string;
+  brandColor: string;
+  domain: string;
+  designation: string;
+  tagline?: string;
+}
+
+export const placementRecruiters: PlacementRecruiter[] = [
+  {
+    name: "Microsoft",
+    tier: "Product",
+    role: "Software Engineering",
+    logo: "/logos/microsoft.svg",
+    brandColor: "#00A4EF",
+    domain: "Cloud & AI Platforms",
+    designation: "Tier-1 Product Recruiter",
+    tagline: "Global Cloud, Azure & Enterprise Systems",
+  },
+  {
+    name: "Oracle",
+    tier: "Cloud/Database",
+    role: "Systems Engineer",
+    logo: "/logos/oracle.svg",
+    brandColor: "#C74634",
+    domain: "Autonomous Cloud & Infrastructure",
+    designation: "Enterprise Cloud Partner",
+    tagline: "Autonomous DB & Hyperscale Infrastructure",
+  },
+  {
+    name: "Infosys",
+    tier: "Official Partner",
+    role: "Digital Specialist",
+    logo: "/logos/infosys.svg",
+    brandColor: "#007CC3",
+    domain: "Next-Gen Digital & AI Solutions",
+    designation: "Official Campus Partner",
+    tagline: "Digital Transformation & AI Accelerators",
+  },
+  {
+    name: "TCS iON",
+    tier: "Assessment Partner",
+    role: "Prime & Digital",
+    logo: "/logos/tcs.svg",
+    brandColor: "#005A9C",
+    domain: "National Assessment & Cloud Platforms",
+    designation: "Strategic Assessment Hub",
+    tagline: "TCS Prime & Digital Innovation Tracks",
+  },
+  {
+    name: "Wipro",
+    tier: "Global IT",
+    role: "Project Engineer",
+    logo: "/logos/wipro.svg",
+    brandColor: "#7A2882",
+    domain: "Cognitive Computing & Cloud Consulting",
+    designation: "Global Technology Partner",
+    tagline: "Full-Stack Engineering & Cyber Security",
+  },
+  {
+    name: "Accenture",
+    tier: "Consulting & Tech",
+    role: "Associate Software Engineer",
+    logo: "/logos/accenture.svg",
+    brandColor: "#A100FF",
+    domain: "Enterprise Cloud & Digital Engineering",
+    designation: "Global Consulting Partner",
+    tagline: "Multi-Cloud Solutions & Technology Strategy",
+  },
+  {
+    name: "L&T Infotech",
+    tier: "Enterprise Solutions",
+    role: "Software Developer",
+    logo: "/logos/lti.svg",
+    brandColor: "#FF5E4F",
+    domain: "Digital Core, IoT & Industrial Cloud",
+    designation: "Core Engineering Partner",
+    tagline: "LTIMindtree Engineering & Data Platforms",
+  },
+  {
+    name: "HCL Technologies",
+    tier: "Technology Services",
+    role: "Member Technical Staff",
+    logo: "/logos/hcl.svg",
+    brandColor: "#006BB6",
+    domain: "Engineering R&D & Systems Architecture",
+    designation: "Technology Services Partner",
+    tagline: "Semiconductor, Embedded & Cloud Ecosystems",
+  },
+  {
+    name: "Daffodil Software",
+    tier: "Product Engineering",
+    role: "Associate Developer",
+    logo: "/logos/daffodil.png",
+    brandColor: "#00A0E3",
+    domain: "Custom Product Development & SaaS",
+    designation: "Product Innovation Partner",
+    tagline: "Modern Mobile, Web & Cloud Architecture",
+  },
+  {
+    name: "Capital IQ",
+    tier: "Financial Analytics",
+    role: "Data Analyst",
+    logo: "/logos/capitaliq.svg",
+    brandColor: "#D6002A",
+    domain: "Financial Intelligence & Market Modeling",
+    designation: "Financial Analytics Partner",
+    tagline: "S&P Global Quantitative Risk & Research",
+  },
+];
