@@ -11,7 +11,7 @@ interface RecruitmentPartnerRingProps {
 
 export function RecruitmentPartnerRing({
   partners,
-  autoRotateSpeed = 0.035,
+  autoRotateSpeed = 0.32,
 }: RecruitmentPartnerRingProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -68,25 +68,26 @@ export function RecruitmentPartnerRing({
 
   const stepAngle = 360 / partners.length; // 36 degrees for 10 cards
 
-  // Smooth animation frame loop
+  // Smooth fast continuous circular animation loop
   useEffect(() => {
     let animationFrameId: number;
 
     const animate = () => {
       if (!isDraggingRef.current) {
-        // Apply momentum friction decay
-        if (Math.abs(velocityRef.current) > 0.005) {
-          velocityRef.current *= 0.93;
+        // Apply momentum friction decay if dragged/flicked
+        if (Math.abs(velocityRef.current) > 0.01) {
+          velocityRef.current *= 0.92;
           rotationRef.current += velocityRef.current;
-          setRotation(rotationRef.current);
         } else {
           velocityRef.current = 0;
-          // Apply gentle auto-rotation when not hovered and auto-play is enabled
-          if (isAutoPlaying && !isHovered && !isInteractingRef.current) {
-            rotationRef.current += autoRotateSpeed;
-            setRotation(rotationRef.current);
-          }
         }
+
+        // Fast continuous circular rotation
+        if (isAutoPlaying) {
+          rotationRef.current += autoRotateSpeed;
+        }
+
+        setRotation(rotationRef.current);
       }
 
       animationFrameId = requestAnimationFrame(animate);
@@ -94,7 +95,7 @@ export function RecruitmentPartnerRing({
 
     animationFrameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isAutoPlaying, isHovered, autoRotateSpeed]);
+  }, [isAutoPlaying, autoRotateSpeed]);
 
   // Pointer drag event handlers
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -142,11 +143,8 @@ export function RecruitmentPartnerRing({
         containerRef.current.releasePointerCapture(e.pointerId);
       }
 
-      // Schedule auto-play resumption after interaction finishes
       if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
-      resumeTimerRef.current = setTimeout(() => {
-        isInteractingRef.current = false;
-      }, 3000);
+      isInteractingRef.current = false;
     },
     []
   );
@@ -165,7 +163,7 @@ export function RecruitmentPartnerRing({
       // Animate smoothly using a short interpolation
       const startRot = currentRot;
       const endRot = currentRot + rel;
-      const duration = 600; // ms
+      const duration = 500; // ms
       const startTime = performance.now();
 
       function step(now: number) {
@@ -181,9 +179,7 @@ export function RecruitmentPartnerRing({
           requestAnimationFrame(step);
         } else {
           velocityRef.current = 0;
-          resumeTimerRef.current = setTimeout(() => {
-            isInteractingRef.current = false;
-          }, 3000);
+          isInteractingRef.current = false;
         }
       }
 
