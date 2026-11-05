@@ -39,7 +39,7 @@ export function AnnouncementsSection() {
           <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-28">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30 backdrop-blur-xs">
               <Bell className="w-3.5 h-3.5 text-blue-400" />
-              <span>07 / Registrar Dispatches</span>
+              <span>06 / Stay Connected</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.08]">
@@ -49,7 +49,7 @@ export function AnnouncementsSection() {
             </h2>
 
             <p className="text-base text-slate-300 leading-relaxed">
-              Real-time directives from the ADGIPS Registrar, Academic Council, and Corporate Resource Centre regarding examinations, placements, and campus activities.
+              Direct communication from the ADGIPS Registrar, Academic Council, and Corporate Resource Centre regarding GGSIPU semester schedules, corporate drives, and collegiate guidelines.
             </p>
 
             {/* Filter Pills with Counts */}

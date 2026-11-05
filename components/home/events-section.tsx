@@ -34,15 +34,15 @@ export function EventsSection() {
         variants={sectionVariants}
       >
         <SectionHeading
-          pill="Campus Calendar"
+          pill="03 / Experience Campus Life"
           pillVariant="secondary"
-          title="Institutional Events &"
-          highlightText="Campus Fiestas"
-          description="Experience the vibrant momentum of ADGIPS. From flagship cultural festivals and national moot court debates to cutting-edge technical symposiums and athletic meets."
+          title="The Pulse of Campus Life &"
+          highlightText="Collegiate Fiestas"
+          description="Beyond lectures and laboratories, ADGIPS thrives with student expression. Experience our flagship socio-cultural festivals, battle of the bands, national appellate mock trials, and university sports meets."
           align="split"
           action={
             <Button variant="outline" href="/events" className="group">
-              <span>Explore All Events & Archive</span>
+              <span>View Liquid Lens Carousel & Archive</span>
               <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
             </Button>
           }

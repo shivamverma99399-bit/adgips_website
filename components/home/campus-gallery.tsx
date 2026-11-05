@@ -63,7 +63,7 @@ export function CampusGallery() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30 mb-4 backdrop-blur-xs">
               <Compass className="w-3.5 h-3.5 text-blue-400" />
-              <span>06 / Architecture & Atmosphere</span>
+              <span>07 / Life at ADGIPS</span>
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.08] mb-4">
               Spaces Engineered for{" "}
@@ -80,7 +80,7 @@ export function CampusGallery() {
               href="/gallery"
               className="inline-flex items-center gap-2 px-5 py-3 rounded-full text-sm font-bold bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all shadow-xs group cursor-pointer backdrop-blur-sm"
             >
-              <span>Explore All 8 Spaces</span>
+              <span>Open 3D Folio Journal</span>
               <ArrowRight className="w-4 h-4 text-blue-400 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>

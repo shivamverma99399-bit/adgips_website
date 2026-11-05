@@ -21,11 +21,11 @@ export function InstitutionalHighlights() {
         viewport={{ once: true, amount: 0.15 }}
       >
         <SectionHeading
-          pill="Campus Profile"
+          pill="Infrastructure & Career Milestones"
           pillVariant="secondary"
           title="A Living Campus"
           highlightText="Engineered for Ambition"
-          description="Established under the Babu Banarasi Das Educational Group, ADGIPS integrates world-class engineering laboratories, moot court jurisprudential training, and executive corporate exposure."
+          description="Established under the Babu Banarasi Das Educational Group, ADGIPS combines world-class engineering computing research bays, simulated appellate moot courts, and tier-1 corporate recruitment linkages across NCR."
           align="split"
           action={
             <a

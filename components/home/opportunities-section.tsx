@@ -67,18 +67,17 @@ export function OpportunitiesSection() {
         variants={sectionVariants}
       >
         <SectionHeading
-          pill="Career Acceleration"
+          pill="04 / Find Your Next Opportunity"
           pillVariant="secondary"
-          title="Student Opportunities &"
-          highlightText="Hackathons"
-          description="Curated national hackathons, government ideathons, corporate engineering internships, and merit fellowships inspired by Unstop to elevate your student profile."
+          title="Competitive Excellence &"
+          highlightText="Career Acceleration"
+          description="National hackathons, government ideathons, corporate engineering fellowships, and appellate moot contests curated to sharpen your practical skills and collegiate portfolio."
           align="split"
           action={
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 hidden sm:inline">
-                Bookmark & track competitions locally
-              </span>
-            </div>
+            <Button variant="outline" href="/activities" className="group">
+              <span>Join Societies & Student Clubs</span>
+              <Award className="w-4 h-4 ml-1.5 text-blue-400" />
+            </Button>
           }
         />
       </motion.div>

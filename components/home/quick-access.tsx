@@ -4,13 +4,14 @@ import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Calendar,
   Compass,
-  BookOpen,
-  Image as ImageIcon,
-  GraduationCap,
   ArrowRight,
   Layers,
+  GraduationCap,
+  Scale,
+  Cpu,
+  BookOpen,
+  Briefcase,
 } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
 import { StackedCarousel, StackedCarouselItem } from "@/components/ui/stacked-carousel";
@@ -36,7 +37,6 @@ export function QuickAccess() {
       category: "School of Engineering",
       image: "/images/engineering.jpg",
       tag: "AICTE Approved",
-
       href: "/resources",
     },
     {
@@ -47,7 +47,6 @@ export function QuickAccess() {
       category: "School of Law",
       image: "/images/law-moot-court.jpg",
       tag: "BCI Approved",
-
       href: "/activities",
     },
     {
@@ -58,7 +57,6 @@ export function QuickAccess() {
       category: "Knowledge Commons",
       image: "/images/library.jpg",
       tag: "85,000+ Volumes",
-
       href: "/resources",
     },
     {
@@ -70,7 +68,7 @@ export function QuickAccess() {
       image: "/images/campus-life.jpg",
       tag: "Corporate Trajectory",
       badge: "44+ LPA Tier-1",
-      href: "/events",
+      href: "#highlights",
     },
     {
       id: "cultural-fest",
@@ -118,39 +116,65 @@ export function QuickAccess() {
     },
   ];
 
-  {/*const portalGateways = [
-    { title: "Campus Events", href: "/events", icon: Calendar, subtitle: "Fests & Symposiums" },
-    { title: "Student Activities", href: "/activities", icon: Compass, subtitle: "25+ Clubs & IEEE" },
-    { title: "Academic Resources", href: "/resources", icon: BookOpen, subtitle: "Curriculum & PYQs" },
-    { title: "Campus Gallery", href: "/gallery", icon: ImageIcon, subtitle: "Visual Archives" },
-    { title: "Student Portal", href: "/login", icon: GraduationCap, subtitle: "Attendance & Marks" },
-  ];*/
-}
+  const campusGateways = [
+    {
+      title: "Engineering & AI Labs",
+      desc: "Gigabit-speed computing & robotics bays",
+      icon: Cpu,
+      href: "/resources",
+      badge: "B.Tech",
+    },
+    {
+      title: "Moot Court Chambers",
+      desc: "Full-scale courtroom trial advocacy",
+      icon: Scale,
+      href: "/activities",
+      badge: "School of Law",
+    },
+    {
+      title: "Central Digital Library",
+      desc: "85,000+ volumes & IEEE Xplore access",
+      icon: BookOpen,
+      href: "/resources",
+      badge: "E-Library",
+    },
+    {
+      title: "Corporate Resource Centre",
+      desc: "44+ LPA peak packages & recruitment",
+      icon: Briefcase,
+      href: "#highlights",
+      badge: "Placements",
+    },
+  ];
 
   return (
     <SectionContainer id="campus-showcase" className="py-12 sm:py-16 bg-transparent border-b border-white/10">
-      {/* Editorial Header */}
+      {/* Editorial Chapter Header */}
       <motion.div
         variants={sectionVariants}
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.15 }}
-        className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8"
+        className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8"
       >
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold uppercase tracking-wider mb-2 backdrop-blur-xs">
-            <Layers className="w-3.5 h-3.5 text-blue-400" />
-            <span>Campus Index • 3D Showcase</span>
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-bold uppercase tracking-wider mb-2.5 backdrop-blur-xs">
+            <Compass className="w-3.5 h-3.5 text-blue-400" />
+            <span>02 / Discover Your Campus</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
-            Explore ADGIPS in{" "}
-            <span className="font-serif italic font-normal text-blue-400">3D Perspective</span>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
+            Where Architecture Meets{" "}
+            <span className="font-serif italic font-normal text-blue-400">Academic Rigour</span>
           </h2>
+          <p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
+            From 8.08 acres of eco-friendly infrastructure and cutting-edge robotics laboratories to full-scale moot court trial chambers, explore the physical spaces where ADGIPS scholars learn, collaborate, and innovate.
+          </p>
         </div>
 
-        <p className="text-xs sm:text-sm text-slate-300 max-w-md leading-relaxed">
-          Interact with our 8.08-acre Shastri Park campus, engineering research bays, moot court chambers, and vibrant student fests through the interactive card stack.
-        </p>
+        <div className="text-xs text-slate-400 flex items-center gap-2 font-mono bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 shrink-0">
+          <Layers className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Interactive 3D Stack View</span>
+        </div>
       </motion.div>
 
       {/* 3D STACKED IMAGE CAROUSEL */}
@@ -159,7 +183,7 @@ export function QuickAccess() {
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true, amount: 0.12 }}
         transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-        className="mb-12"
+        className="mb-10"
       >
         <StackedCarousel
           items={campusShowcaseItems}
@@ -168,47 +192,47 @@ export function QuickAccess() {
         />
       </motion.div>
 
-      {/* COMPACT INSTITUTIONAL PORTAL GATEWAY RIBBON
+      {/* COMPACT INSTITUTIONAL CAMPUS HUBS RIBBON */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 backdrop-blur-md border border-white/10 shadow-lg"
-      >*/}
-        {/*<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-white/10">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Direct Institutional Portals
-          </span>
-          <span className="text-[11px] text-blue-400 font-semibold">
-            Select a gateway to access student services
-          </span>
-        </div>
-
-        {/*<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-          {portalGateways.map((portal) => {
-            const Icon = portal.icon;
-            return (
-              <Link
-                key={portal.title}
-                href={portal.href}
-                className="group p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-blue-400/40 transition-all flex items-center justify-between"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <Icon className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
-                    <p className="text-xs font-bold text-white group-hover:text-blue-300 truncate">
-                      {portal.title}
-                    </p>
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5"
+      >
+        {campusGateways.map((gate) => {
+          const Icon = gate.icon;
+          return (
+            <Link
+              key={gate.title}
+              href={gate.href}
+              className="group p-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900/90 border border-white/10 hover:border-blue-400/40 backdrop-blur-md transition-all shadow-md flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+                    <Icon className="w-4 h-4" />
                   </div>
-                  <p className="text-[10px] text-slate-400 truncate">{portal.subtitle}</p>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    {gate.badge}
+                  </span>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
-              </Link>
-            );
-          })}
-        </div>*/}
+                <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors mb-0.5">
+                  {gate.title}
+                </h4>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  {gate.desc}
+                </p>
+              </div>
 
+              <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-blue-400 font-semibold group-hover:text-blue-300 mt-2">
+                <span>Explore Facility</span>
+                <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+          );
+        })}
+      </motion.div>
     </SectionContainer>
   );
 }
