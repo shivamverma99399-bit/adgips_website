@@ -1,18 +1,8 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  Compass,
-  ArrowRight,
-  Layers,
-  GraduationCap,
-  Scale,
-  Cpu,
-  BookOpen,
-  Briefcase,
-} from "lucide-react";
+import { Compass, Layers } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
 import { StackedCarousel, StackedCarouselItem } from "@/components/ui/stacked-carousel";
 import { sectionVariants } from "@/lib/animations";
@@ -116,37 +106,6 @@ export function QuickAccess() {
     },
   ];
 
-  const campusGateways = [
-    {
-      title: "Engineering & AI Labs",
-      desc: "Gigabit-speed computing & robotics bays",
-      icon: Cpu,
-      href: "/resources",
-      badge: "B.Tech",
-    },
-    {
-      title: "Moot Court Chambers",
-      desc: "Full-scale courtroom trial advocacy",
-      icon: Scale,
-      href: "/activities",
-      badge: "School of Law",
-    },
-    {
-      title: "Central Digital Library",
-      desc: "85,000+ volumes & IEEE Xplore access",
-      icon: BookOpen,
-      href: "/resources",
-      badge: "E-Library",
-    },
-    {
-      title: "Corporate Resource Centre",
-      desc: "44+ LPA peak packages & recruitment",
-      icon: Briefcase,
-      href: "#highlights",
-      badge: "Placements",
-    },
-  ];
-
   return (
     <SectionContainer id="campus-showcase" className="py-12 sm:py-16 bg-transparent border-b border-white/10">
       {/* Editorial Chapter Header */}
@@ -183,55 +142,12 @@ export function QuickAccess() {
         whileInView={{ opacity: 1, scale: 1 }}
         viewport={{ once: true, amount: 0.12 }}
         transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-        className="mb-10"
       >
         <StackedCarousel
           items={campusShowcaseItems}
           autoPlay={true}
           autoPlayInterval={5000}
         />
-      </motion.div>
-
-      {/* COMPACT INSTITUTIONAL CAMPUS HUBS RIBBON */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5"
-      >
-        {campusGateways.map((gate) => {
-          const Icon = gate.icon;
-          return (
-            <Link
-              key={gate.title}
-              href={gate.href}
-              className="group p-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900/90 border border-white/10 hover:border-blue-400/40 backdrop-blur-md transition-all shadow-md flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {gate.badge}
-                  </span>
-                </div>
-                <h4 className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors mb-0.5">
-                  {gate.title}
-                </h4>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  {gate.desc}
-                </p>
-              </div>
-
-              <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-blue-400 font-semibold group-hover:text-blue-300 mt-2">
-                <span>Explore Facility</span>
-                <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-          );
-        })}
       </motion.div>
     </SectionContainer>
   );
