@@ -1573,6 +1573,8 @@ export default function AdminPage() {
                       <th className="py-2.5 px-3">Stream / Sem</th>
                       <th className="py-2.5 px-3">Type</th>
                       <th className="py-2.5 px-3">File Link</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3">Downloads</th>
                       <th className="py-2.5 px-3 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -1604,11 +1606,32 @@ export default function AdminPage() {
                               <span className="text-slate-500 text-[11px]">No file attached</span>
                             )}
                           </td>
-                          <td className="py-3 px-3 text-right space-x-2">
+                          <td className="py-3 px-3">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                r.status === "archived"
+                                  ? "bg-slate-800 text-slate-400 border border-slate-700"
+                                  : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              }`}
+                            >
+                              {r.status || "published"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 font-mono text-slate-400 text-[11px]">
+                            {r.downloadsCount || 0}
+                          </td>
+                          <td className="py-3 px-3 text-right space-x-1">
+                            <button
+                              onClick={() => setPreviewItem({ type: "resource", data: r })}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                              title="Preview resource"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => handleToggleStatus("resource", r.id, r.status)}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer"
-                              title="Archive/Publish toggle"
+                              title={r.status === "archived" ? "Publish resource" : "Archive resource"}
                             >
                               <Archive className="w-4 h-4" />
                             </button>

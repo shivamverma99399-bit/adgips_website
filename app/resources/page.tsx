@@ -6,22 +6,29 @@ import {
   Library,
   Search,
   BookOpen,
+  Filter,
+  CheckCircle2,
   FileText,
   Layers,
   GraduationCap,
   Sparkles,
-  CheckCircle2,
-  Filter,
+  Loader2,
+  HardDriveDownload,
 } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { getResources, AcademicResource } from "@/data/resources";
+import {
+  getPublishedResourcesFromFirestore,
+  incrementResourceDownloadCount,
+} from "@/lib/firebase/firestore";
+import type { AcademicResourceDocument } from "@/types/backend";
 
 export default function ResourcesPage() {
-  const [resources, setResources] = useState<AcademicResource[]>([]);
+  const [resources, setResources] = useState<AcademicResourceDocument[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedStream, setSelectedStream] = useState<string>("All");
   const [selectedType, setSelectedType] = useState<string>("All");
   const [selectedSemester, setSelectedSemester] = useState<string>("All");
@@ -29,14 +36,35 @@ export default function ResourcesPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setResources(getResources());
+    let isMounted = true;
+
+    async function loadResources() {
+      try {
+        setIsLoading(true);
+        const data = await getPublishedResourcesFromFirestore();
+        if (isMounted) {
+          setResources(data);
+        }
+      } catch (err) {
+        console.error("Failed to load academic resources:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadResources();
 
     const handleUpdate = () => {
-      setResources(getResources());
+      loadResources();
     };
 
     window.addEventListener("adgips_resources_updated", handleUpdate);
-    return () => window.removeEventListener("adgips_resources_updated", handleUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("adgips_resources_updated", handleUpdate);
+    };
   }, []);
 
   const streams = ["All", "Engineering", "Law", "Management"];
@@ -47,9 +75,20 @@ export default function ResourcesPage() {
     return resources.filter((res) => {
       const matchStream = selectedStream === "All" || res.stream === selectedStream;
       const matchType = selectedType === "All" || res.type === selectedType;
+
+      const semFilter = selectedSemester.toLowerCase();
       const matchSem =
         selectedSemester === "All" ||
-        res.semester.toLowerCase().includes(selectedSemester.toLowerCase().replace("sem ", "semester "));
+        res.semester.toLowerCase() === semFilter ||
+        res.semester.toLowerCase().includes(semFilter.replace("sem ", "semester ")) ||
+        (selectedSemester === "Sem 7 & 8" &&
+          (res.semester.includes("7") ||
+            res.semester.includes("8") ||
+            res.semesterNumber === 7 ||
+            res.semesterNumber === 8)) ||
+        (selectedSemester.startsWith("Sem ") &&
+          res.semesterNumber === parseInt(selectedSemester.replace("Sem ", ""), 10));
+
       const q = searchQuery.toLowerCase().trim();
       const matchQuery =
         !q ||
@@ -62,11 +101,32 @@ export default function ResourcesPage() {
     });
   }, [resources, selectedStream, selectedType, selectedSemester, searchQuery]);
 
-  const handleDownload = (res: AcademicResource) => {
-    if (res.fileUrl && (res.fileUrl.startsWith("http://") || res.fileUrl.startsWith("https://") || res.fileUrl.startsWith("/"))) {
+  const handleDownload = async (res: AcademicResourceDocument) => {
+    if (
+      res.fileUrl &&
+      (res.fileUrl.startsWith("http://") ||
+        res.fileUrl.startsWith("https://") ||
+        res.fileUrl.startsWith("/"))
+    ) {
+      // Optimistically increment download count in client UI
+      setResources((prev) =>
+        prev.map((item) =>
+          item.id === res.id
+            ? { ...item, downloadsCount: (item.downloadsCount || 0) + 1 }
+            : item
+        )
+      );
+
+      // Persist atomic increment in Firestore
+      incrementResourceDownloadCount(res.id).catch((err) =>
+        console.error("Could not increment download counter:", err)
+      );
+
+      // Open genuine file download
       window.open(res.fileUrl, "_blank", "noopener,noreferrer");
       return;
     }
+
     toast({
       title: "Document Repository Link",
       description: `Official document repository link for ${res.code} will be available once uploaded to the server repository.`,
@@ -187,6 +247,24 @@ export default function ResourcesPage() {
               ))}
             </div>
 
+            {/* Semester Filters */}
+            <div className="flex items-center gap-1 overflow-x-auto">
+              <span className="text-slate-400 font-medium mr-1">Semester:</span>
+              {semesters.map((sem) => (
+                <button
+                  key={sem}
+                  onClick={() => setSelectedSemester(sem)}
+                  className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                    selectedSemester === sem
+                      ? "bg-blue-600 text-white font-semibold"
+                      : "text-slate-400 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {sem}
+                </button>
+              ))}
+            </div>
+
             {/* Total Results Count */}
             <span className="text-[11px] text-slate-400 font-mono">
               Showing {filteredResources.length} matching resources
@@ -194,70 +272,97 @@ export default function ResourcesPage() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="py-20 text-center rounded-3xl bg-slate-900/40 border border-white/10 mb-12">
+            <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-3" />
+            <p className="text-sm font-semibold text-white">Loading Academic Repository...</p>
+            <p className="text-xs text-slate-400 mt-1">Retrieving verified course materials and GGSIPU syllabi from Firestore.</p>
+          </div>
+        )}
+
         {/* Resources Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-          {filteredResources.map((item) => (
-            <div
-              key={item.id}
-              className="flex flex-col justify-between p-5 rounded-2xl bg-slate-900/60 backdrop-blur-md border border-white/10 hover:border-blue-400/40 hover:bg-white/10 hover:shadow-xl transition-all group text-white space-y-4"
-            >
-              <div>
-                {/* Meta Header */}
-                <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-blue-300 bg-blue-500/20 border border-blue-400/20 px-2 py-0.5 rounded">
-                      {item.code}
+        {!isLoading && filteredResources.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+            {filteredResources.map((item) => (
+              <div
+                key={item.id}
+                className="flex flex-col justify-between p-5 rounded-2xl bg-slate-900/60 backdrop-blur-md border border-white/10 hover:border-blue-400/40 hover:bg-white/10 hover:shadow-xl transition-all group text-white space-y-4"
+              >
+                <div>
+                  {/* Meta Header */}
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-blue-300 bg-blue-500/20 border border-blue-400/20 px-2 py-0.5 rounded">
+                        {item.code}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                        {item.type}
+                      </Badge>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      {item.semester}
                     </span>
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5">
-                      {item.type}
-                    </Badge>
                   </div>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    {item.semester}
-                  </span>
+
+                  {/* Title */}
+                  <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors mb-1.5">
+                    {item.title}
+                  </h3>
+
+                  {/* Department */}
+                  <p className="text-xs text-slate-400 font-medium mb-2">
+                    {item.department} • Cycle {item.year}
+                  </p>
+
+                  {/* Description */}
+                  <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+                    {item.description}
+                  </p>
                 </div>
 
-                {/* Title */}
-                <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors mb-1.5">
-                  {item.title}
-                </h3>
+                {/* Card Footer: Format, Downloads & Genuine Download Button */}
+                <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px]">
+                    <span>{item.format} • {item.fileSize}</span>
+                    <span className="inline-flex items-center gap-1 text-slate-400">
+                      <HardDriveDownload className="w-3 h-3 text-slate-500" />
+                      {item.downloadsCount || 0}
+                    </span>
+                  </div>
 
-                {/* Department */}
-                <p className="text-xs text-slate-400 font-medium mb-2">
-                  {item.department} • Cycle {item.year}
-                </p>
-
-                {/* Description */}
-                <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
-                  {item.description}
-                </p>
+                  <button
+                    onClick={() => handleDownload(item)}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all shadow-md shadow-blue-600/20 cursor-pointer active:scale-95"
+                    title={`Download ${item.title}`}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download Resource</span>
+                  </button>
+                </div>
               </div>
+            ))}
+          </div>
+        )}
 
-              {/* Card Footer: Size & Working Download Button */}
-              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-mono text-[11px]">
-                  {item.format} • {item.fileSize}
-                </span>
+        {/* Empty State: Zero resources in database */}
+        {!isLoading && resources.length === 0 && (
+          <div className="py-20 text-center rounded-3xl bg-slate-900/40 border border-white/10 mb-12 px-6">
+            <BookOpen className="w-12 h-12 text-slate-500 mx-auto mb-3 opacity-60" />
+            <h3 className="text-lg font-bold text-white mb-1.5">No Academic Resources Published Yet</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+              The institutional repository is currently awaiting indexing by departmental faculty and administrators. Syllabi, past papers, and handouts will appear here once officially published.
+            </p>
+          </div>
+        )}
 
-                <button
-                  onClick={() => handleDownload(item)}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all shadow-md shadow-blue-600/20 cursor-pointer active:scale-95"
-                  title={`Download ${item.title}`}
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download Resource</span>
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredResources.length === 0 && (
-          <div className="py-16 text-center rounded-3xl bg-slate-900/40 border border-white/10 mb-12">
+        {/* Empty State: Filter criteria matched nothing */}
+        {!isLoading && resources.length > 0 && filteredResources.length === 0 && (
+          <div className="py-16 text-center rounded-3xl bg-slate-900/40 border border-white/10 mb-12 px-6">
             <BookOpen className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-white mb-1">No resources found</h3>
-            <p className="text-xs text-slate-400">
-              No matching academic resources for your selected filters. Try broadening your criteria.
+            <h3 className="text-lg font-bold text-white mb-1">No matching resources found</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              No academic materials match your current filter selections. Try selecting &apos;All&apos; streams or clearing the search box.
             </p>
           </div>
         )}

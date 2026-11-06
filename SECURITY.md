@@ -57,10 +57,10 @@ This document outlines the security controls, authentication rules, role hierarc
 - **Create**: Authenticated user matching `userId`, with `status == 'confirmed'`.
 - **Update**: Only the applicant can modify `status` (e.g. to `'cancelled'`), or admins can change approval status.
 
-### Public Content Collections (`events`, `announcements`, `resources`, `societies`)
+### Public Content Collections (`events`, `announcements`, `resources`, `societies`, `opportunities`, `gallery`)
 - **Read**: Publicly available without requiring login.
 - **Write**: Strictly restricted to authenticated administrators.
-- **Atomic Counters**: Authenticated users can increment `registeredCount` on events and `downloadsCount` on resources via controlled transactions.
+- **Atomic Counters**: Public visitors and authenticated scholars can increment `downloadsCount` on academic resources upon downloading documents; authenticated users can increment `registeredCount` on events via controlled transactions.
 
 ---
 

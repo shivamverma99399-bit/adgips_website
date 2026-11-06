@@ -88,7 +88,6 @@ service cloud.firestore {
       allow read: if true;
       allow create, delete: if isAdmin();
       allow update: if isAdmin() || (
-        isAuthenticated() &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadsCount'])
       );
     }

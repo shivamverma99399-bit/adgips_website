@@ -1,16 +1,10 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  BookOpen,
   Download,
-  GraduationCap,
   ArrowRight,
-  FileText,
-  Layers,
-  CheckCircle2,
   Library,
 } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
@@ -18,7 +12,11 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
-import { initialResourcesData, AcademicResource } from "@/data/resources";
+import {
+  getPublishedResourcesFromFirestore,
+  incrementResourceDownloadCount,
+} from "@/lib/firebase/firestore";
+import type { AcademicResourceDocument } from "@/types/backend";
 import {
   sectionVariants,
   staggerContainer,
@@ -28,11 +26,45 @@ import {
 
 export function LearnGrowSection() {
   const { toast } = useToast();
-  const featuredResources = initialResourcesData.slice(0, 4);
+  const [resources, setResources] = useState<AcademicResourceDocument[]>([]);
 
-  const handleDownload = (res: AcademicResource) => {
-    if (res.fileUrl) {
-      window.open(res.fileUrl, "_blank");
+  useEffect(() => {
+    let isMounted = true;
+    async function loadResources() {
+      try {
+        const data = await getPublishedResourcesFromFirestore();
+        if (isMounted) {
+          setResources(data.slice(0, 4));
+        }
+      } catch (err) {
+        console.error("Failed to load featured resources:", err);
+      }
+    }
+    loadResources();
+
+    const handleUpdate = () => {
+      loadResources();
+    };
+
+    window.addEventListener("adgips_resources_updated", handleUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("adgips_resources_updated", handleUpdate);
+    };
+  }, []);
+
+  const handleDownload = (res: AcademicResourceDocument) => {
+    if (res.fileUrl && (res.fileUrl.startsWith("http://") || res.fileUrl.startsWith("https://") || res.fileUrl.startsWith("/"))) {
+      setResources((prev) =>
+        prev.map((item) =>
+          item.id === res.id ? { ...item, downloadsCount: (item.downloadsCount || 0) + 1 } : item
+        )
+      );
+      incrementResourceDownloadCount(res.id).catch((err) =>
+        console.error("Failed to increment download counter:", err)
+      );
+
+      window.open(res.fileUrl, "_blank", "noopener,noreferrer");
       toast({
         title: "Download Initiated",
         description: `Accessing ${res.code} — ${res.title}.`,
@@ -79,7 +111,7 @@ export function LearnGrowSection() {
         variants={staggerContainer}
         className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"
       >
-        {featuredResources.length === 0 ? (
+        {resources.length === 0 ? (
           <div className="col-span-full p-10 text-center rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-md">
             <Library className="w-8 h-8 text-slate-500 mx-auto mb-2" />
             <p className="text-sm font-bold text-white mb-1">Knowledge Commons Repository</p>
@@ -88,62 +120,63 @@ export function LearnGrowSection() {
             </p>
           </div>
         ) : (
-          featuredResources.map((res) => (
+          resources.map((res) => (
             <motion.div
               key={res.id}
               variants={staggerItem}
               whileHover={{ y: -4, transition: cardHoverTransition }}
               className="p-5 rounded-3xl bg-slate-900/60 backdrop-blur-md border border-white/10 hover:border-blue-400/40 hover:bg-slate-900/80 transition-all shadow-lg flex flex-col justify-between text-white space-y-4 group"
             >
-            <div>
-              {/* Top Badges */}
-              <div className="flex items-center justify-between gap-2 mb-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-400/20">
-                    {res.code}
+              <div>
+                {/* Top Badges */}
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-400/20">
+                      {res.code}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                      {res.type}
+                    </Badge>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {res.semester}
                   </span>
-                  <Badge variant="outline" className="text-[10px] py-0 px-1.5">
-                    {res.type}
-                  </Badge>
                 </div>
-                <span className="text-[11px] text-slate-400 font-medium">
-                  {res.semester}
-                </span>
+
+                {/* Title */}
+                <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors mb-1.5">
+                  {res.title}
+                </h3>
+
+                {/* Department */}
+                <p className="text-xs text-slate-400 font-medium mb-2">
+                  {res.stream} ({res.department}) • Academic Cycle {res.year}
+                </p>
+
+                {/* Description */}
+                <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
+                  {res.description}
+                </p>
               </div>
 
-              {/* Title */}
-              <h3 className="text-base font-bold text-white group-hover:text-blue-300 transition-colors mb-1.5">
-                {res.title}
-              </h3>
+              {/* Bottom Row: Metadata & Working Download Action */}
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                <span className="font-mono text-slate-400 text-[11px]">
+                  {res.format} • {res.fileSize}
+                </span>
 
-              {/* Department */}
-              <p className="text-xs text-slate-400 font-medium mb-2">
-                {res.stream} ({res.department}) • Academic Cycle {res.year}
-              </p>
-
-              {/* Description */}
-              <p className="text-xs text-slate-300 leading-relaxed line-clamp-2">
-                {res.description}
-              </p>
-            </div>
-
-            {/* Bottom Row: Metadata & Working Download Action */}
-            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-              <span className="font-mono text-slate-400 text-[11px]">
-                {res.format} • {res.fileSize}
-              </span>
-
-              <button
-                onClick={() => handleDownload(res)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all shadow-md shadow-blue-600/20 cursor-pointer active:scale-95"
-                title={`Download ${res.code}`}
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download Handout</span>
-              </button>
-            </div>
-          </motion.div>
-        )))}
+                <button
+                  onClick={() => handleDownload(res)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-all shadow-md shadow-blue-600/20 cursor-pointer active:scale-95"
+                  title={`Download ${res.code}`}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Handout</span>
+                </button>
+              </div>
+            </motion.div>
+          ))
+        )}
       </motion.div>
 
       {/* Central E-Library Quick Link Banner */}

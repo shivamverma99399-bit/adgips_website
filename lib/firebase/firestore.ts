@@ -282,13 +282,22 @@ export async function getPublishedAnnouncementsFromFirestore(): Promise<Announce
 
 export async function getResourcesFromFirestore(): Promise<AcademicResourceDocument[]> {
   try {
-    const q = query(collection(db, "resources"), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as AcademicResourceDocument[];
+    const snap = await getDocs(collection(db, "resources"));
+    const resources = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as AcademicResourceDocument[];
+    return resources.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
   } catch (error) {
     console.error("Error fetching resources:", error);
     return [];
   }
+}
+
+export async function getPublishedResourcesFromFirestore(): Promise<AcademicResourceDocument[]> {
+  const all = await getResourcesFromFirestore();
+  return all.filter((r) => r.status !== "archived" && r.status !== "draft");
 }
 
 export async function incrementResourceDownloadCount(resourceId: string): Promise<void> {
