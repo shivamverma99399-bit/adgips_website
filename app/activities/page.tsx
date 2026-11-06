@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { getStoredSession, DEFAULT_STUDENT, applyStudentForClub } from "@/lib/auth";
+import { useAuth } from "@/components/providers/auth-provider";
+import { applyForSocietyInFirestore } from "@/lib/firebase/firestore";
 
 interface ClubItem {
   id: string;
@@ -117,6 +119,7 @@ export default function ActivitiesPage() {
   const [preferredRole, setPreferredRole] = useState("General Member");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user, profile, refreshProfile } = useAuth();
 
   const categories = ["All", "Technical", "Legal", "Cultural", "Sports", "Management"];
 
@@ -135,18 +138,47 @@ export default function ActivitiesPage() {
     });
   }, [selectedCategory, searchQuery]);
 
-  const handleApplySubmit = (e: React.FormEvent) => {
+  const handleApplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedClubForApply) return;
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      if (user) {
+        const res = await applyForSocietyInFirestore(
+          {
+            id: selectedClubForApply.id,
+            name: selectedClubForApply.name,
+            category: selectedClubForApply.category,
+          },
+          {
+            uid: user.uid,
+            email: user.email || "",
+            name: profile?.name || user.displayName || "Student Scholar",
+            enrollmentNo: profile?.enrollmentNo,
+          },
+          preferredRole
+        );
+
+        if (!res.success) {
+          toast({
+            title: "Application Notice",
+            description: res.message,
+            type: "info",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        await refreshProfile();
+      }
+
       applyStudentForClub(
         selectedClubForApply.name,
         selectedClubForApply.category,
         preferredRole
       );
-      setIsSubmitting(false);
+
       const appliedClub = selectedClubForApply;
       setSelectedClubForApply(null);
 
@@ -155,7 +187,15 @@ export default function ActivitiesPage() {
         description: `Your membership application for ${appliedClub.name} (${preferredRole}) has been forwarded to the Executive Committee.`,
         type: "success",
       });
-    }, 500);
+    } catch (err: any) {
+      toast({
+        title: "Application Error",
+        description: err.message || "Failed to submit application.",
+        type: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import { WaveGradient } from "@/components/ui/wave-gradient";
 import { CustomCursor } from "@/components/ui/custom-cursor";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { ToastProvider } from "@/components/ui/toast";
+import { AuthProvider } from "@/components/providers/auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,14 +51,16 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
     >
       <body className="min-h-full flex flex-col bg-[#040915] text-slate-100 selection:bg-blue-600 selection:text-white relative">
-        <ToastProvider>
-          <WaveGradient />
-          <CustomCursor />
-          <Navbar />
-          <div className="flex-1 flex flex-col relative z-0">{children}</div>
-          <Footer />
-          <ScrollToTop />
-        </ToastProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <WaveGradient />
+            <CustomCursor />
+            <Navbar />
+            <div className="flex-1 flex flex-col relative z-0">{children}</div>
+            <Footer />
+            <ScrollToTop />
+          </ToastProvider>
+        </AuthProvider>
       </body>
     </html>
   );

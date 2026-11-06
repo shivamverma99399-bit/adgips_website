@@ -31,39 +31,60 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { AnimatedProgressBar, AnimatedProgressRing } from "@/components/ui/animated-progress";
-import { getStoredSession, DEFAULT_STUDENT, clearSession, StudentProfile } from "@/lib/auth";
+import { DEFAULT_STUDENT, StudentProfile } from "@/lib/auth";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, profile: authProfile, loading, logout, isAdmin } = useAuth();
   const [profile, setProfile] = useState<StudentProfile>(DEFAULT_STUDENT);
   const [activeTab, setActiveTab] = useState<
     "overview" | "events" | "societies" | "resources" | "exams"
   >("overview");
 
   useEffect(() => {
-    const session = getStoredSession();
-    if (session) {
-      setProfile(session);
+    if (authProfile) {
+      setProfile({
+        ...DEFAULT_STUDENT,
+        ...authProfile,
+        id: authProfile.uid,
+        name: authProfile.name || (user?.displayName || "Student Scholar"),
+        email: authProfile.email || (user?.email || "student@gmail.com"),
+        role: authProfile.role === "admin" ? "admin" : "student",
+        registeredEvents: (authProfile.registeredEvents && authProfile.registeredEvents.length > 0)
+          ? authProfile.registeredEvents
+          : DEFAULT_STUDENT.registeredEvents,
+        clubMemberships: (authProfile.clubMemberships && authProfile.clubMemberships.length > 0)
+          ? authProfile.clubMemberships
+          : DEFAULT_STUDENT.clubMemberships,
+      });
+    } else if (user) {
+      setProfile((prev) => ({
+        ...prev,
+        id: user.uid,
+        name: user.displayName || user.email?.split("@")[0] || "Student Scholar",
+        email: user.email || "student@gmail.com",
+      }));
     }
+  }, [authProfile, user]);
 
-    const handleSessionChange = () => {
-      const updated = getStoredSession();
-      if (updated) setProfile(updated);
-    };
-
-    window.addEventListener("adgips_session_change", handleSessionChange);
-    return () => window.removeEventListener("adgips_session_change", handleSessionChange);
-  }, []);
-
-  const handleLogout = () => {
-    clearSession();
-    toast({
-      title: "Signed Out",
-      description: "You have been logged out of your student session.",
-      type: "info",
-    });
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Signed Out",
+        description: "You have been logged out of your session.",
+        type: "info",
+      });
+      router.push("/login");
+    } catch (err: any) {
+      toast({
+        title: "Logout Error",
+        description: err.message,
+        type: "error",
+      });
+    }
   };
 
   return (

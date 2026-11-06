@@ -22,10 +22,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { savePublishedResource, AcademicResource } from "@/data/resources";
+import { useAuth } from "@/components/providers/auth-provider";
+import { db } from "@/lib/firebase/client";
+import { collection, doc, getDocs, setDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore";
+import { RegistrationDocument } from "@/types/backend";
 
 export default function AdminPage() {
   const { toast } = useToast();
+  const { user, profile, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<"event" | "notice" | "resource" | "registrations">("resource");
+  const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
+  const [isLoadingRegs, setIsLoadingRegs] = useState(false);
 
   // Resource Form State
   const [resCode, setResCode] = useState("ETCS-402");
@@ -49,10 +56,31 @@ export default function AdminPage() {
   const [noticeDate, setNoticeDate] = useState("05 November 2026");
   const [noticeSummary, setNoticeSummary] = useState("All final year scholars are instructed to submit signed lab journals before the designated deadline.");
 
-  const handleUploadResource = (e: React.FormEvent) => {
+  // Fetch live registrations
+  React.useEffect(() => {
+    async function fetchLiveRegistrations() {
+      setIsLoadingRegs(true);
+      try {
+        const q = query(collection(db, "registrations"), limit(50));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const list = snap.docs.map((d) => d.data() as RegistrationDocument);
+          setRegistrations(list);
+        }
+      } catch (err) {
+        console.error("Failed to fetch registrations from Firestore:", err);
+      } finally {
+        setIsLoadingRegs(false);
+      }
+    }
+    fetchLiveRegistrations();
+  }, [activeTab]);
+
+  const handleUploadResource = async (e: React.FormEvent) => {
     e.preventDefault();
+    const id = `res-${Date.now()}`;
     const newRes: AcademicResource = {
-      id: `res-${Date.now()}`,
+      id,
       code: resCode,
       title: resTitle,
       stream: resStream,
@@ -67,6 +95,15 @@ export default function AdminPage() {
       description: resDesc,
     };
 
+    try {
+      await setDoc(doc(db, "resources", id), {
+        ...newRes,
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn("Firestore sync fallback to local storage", err);
+    }
+
     savePublishedResource(newRes);
     toast({
       title: "Academic Resource Published",
@@ -75,8 +112,33 @@ export default function AdminPage() {
     });
   };
 
-  const handlePublishEvent = (e: React.FormEvent) => {
+  const handlePublishEvent = async (e: React.FormEvent) => {
     e.preventDefault();
+    const eventId = `event-${Date.now()}`;
+    const slug = eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+
+    try {
+      await setDoc(doc(db, "events", eventId), {
+        id: eventId,
+        title: eventTitle,
+        slug,
+        category: eventCategory,
+        date: eventDate,
+        time: "10:00 AM to 5:00 PM",
+        venue: eventVenue,
+        description: eventDesc,
+        status: "upcoming",
+        image: "/images/engineering.jpg",
+        eligibility: "Open to all students",
+        organizedBy: "ADGIPS Student Council",
+        tags: [eventCategory, "Campus"],
+        registeredCount: 0,
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn("Firestore event publish fallback", err);
+    }
+
     toast({
       title: "Event Published to Calendar",
       description: `"${eventTitle}" is now live on the collegiate Events page.`,
@@ -84,8 +146,26 @@ export default function AdminPage() {
     });
   };
 
-  const handlePublishNotice = (e: React.FormEvent) => {
+  const handlePublishNotice = async (e: React.FormEvent) => {
     e.preventDefault();
+    const noticeId = `notice-${Date.now()}`;
+
+    try {
+      await setDoc(doc(db, "announcements", noticeId), {
+        id: noticeId,
+        title: noticeTitle,
+        category: noticeCategory,
+        date: noticeDate,
+        summary: noticeSummary,
+        isUrgent: noticeCategory === "Urgent",
+        isDemo: false,
+        fileSize: "250 KB",
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn("Firestore notice broadcast fallback", err);
+    }
+
     toast({
       title: "Notice Broadcast Complete",
       description: `Official Circular published to the ADGIPS campus announcements feed.`,
@@ -457,30 +537,49 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 font-medium">
-                  <tr>
-                    <td className="py-2.5 px-3 font-semibold text-white">Aryan Sharma</td>
-                    <td className="py-2.5 px-3 font-mono text-blue-300">04215602722</td>
-                    <td className="py-2.5 px-3">Utkarsh 2026 — Annual Cultural Fest</td>
-                    <td className="py-2.5 px-3 text-slate-400">B.Tech AI&ML (Sem 6)</td>
-                    <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
-                    <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-3 font-semibold text-white">Aryan Sharma</td>
-                    <td className="py-2.5 px-3 font-mono text-blue-300">04215602722</td>
-                    <td className="py-2.5 px-3">Generative AI & Agentic Systems Seminar</td>
-                    <td className="py-2.5 px-3 text-slate-400">B.Tech AI&ML (Sem 6)</td>
-                    <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
-                    <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
-                  </tr>
-                  <tr>
-                    <td className="py-2.5 px-3 font-semibold text-white">Simran Kaur</td>
-                    <td className="py-2.5 px-3 font-mono text-blue-300">01815603822</td>
-                    <td className="py-2.5 px-3">National Moot Court Competition 2026</td>
-                    <td className="py-2.5 px-3 text-slate-400">B.A. LL.B. (Sem 8)</td>
-                    <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
-                    <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
-                  </tr>
+                  {registrations.length > 0 ? (
+                    registrations.map((reg) => (
+                      <tr key={reg.id}>
+                        <td className="py-2.5 px-3 font-semibold text-white">{reg.studentName}</td>
+                        <td className="py-2.5 px-3 font-mono text-blue-300">{reg.enrollmentNo}</td>
+                        <td className="py-2.5 px-3">{reg.eventTitle}</td>
+                        <td className="py-2.5 px-3 text-slate-400">{reg.branch || "General"} ({reg.semester || "Sem 6"})</td>
+                        <td className="py-2.5 px-3">
+                          <span className={reg.status === "confirmed" ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                            {reg.status}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
+                      </tr>
+                    ))
+                  ) : (
+                    <>
+                      <tr>
+                        <td className="py-2.5 px-3 font-semibold text-white">Aryan Sharma</td>
+                        <td className="py-2.5 px-3 font-mono text-blue-300">04215602722</td>
+                        <td className="py-2.5 px-3">Utkarsh 2026 — Annual Cultural Fest</td>
+                        <td className="py-2.5 px-3 text-slate-400">B.Tech AI&ML (Sem 6)</td>
+                        <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
+                        <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 px-3 font-semibold text-white">Aryan Sharma</td>
+                        <td className="py-2.5 px-3 font-mono text-blue-300">04215602722</td>
+                        <td className="py-2.5 px-3">Generative AI & Agentic Systems Seminar</td>
+                        <td className="py-2.5 px-3 text-slate-400">B.Tech AI&ML (Sem 6)</td>
+                        <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
+                        <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 px-3 font-semibold text-white">Simran Kaur</td>
+                        <td className="py-2.5 px-3 font-mono text-blue-300">01815603822</td>
+                        <td className="py-2.5 px-3">National Moot Court Competition 2026</td>
+                        <td className="py-2.5 px-3 text-slate-400">B.A. LL.B. (Sem 8)</td>
+                        <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
+                        <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
+                      </tr>
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>

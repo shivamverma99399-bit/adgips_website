@@ -10,17 +10,19 @@ import { Button } from "@/components/ui/button";
 import { SearchModal } from "@/components/ui/search-modal";
 import { MobileNavigation } from "./mobile-navigation";
 import { cn } from "@/lib/utils";
-import { getStoredSession, StudentProfile } from "@/lib/auth";
+import { useAuth } from "@/components/providers/auth-provider";
+import { getStoredSession } from "@/lib/auth";
 
 export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [session, setSession] = useState<StudentProfile | null>(null);
+  const { user, profile } = useAuth();
+  const [storedSession, setStoredSession] = useState<any>(null);
 
   useEffect(() => {
-    setSession(getStoredSession());
+    setStoredSession(getStoredSession());
 
     const handleScroll = () => {
       if (window.scrollY > 20) {
@@ -31,7 +33,7 @@ export function Navbar() {
     };
 
     const handleSessionChange = () => {
-      setSession(getStoredSession());
+      setStoredSession(getStoredSession());
     };
 
     handleScroll();
@@ -43,6 +45,8 @@ export function Navbar() {
       window.removeEventListener("adgips_session_change", handleSessionChange);
     };
   }, []);
+
+  const session = profile || user || storedSession;
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -134,7 +138,7 @@ export function Navbar() {
                 className="hidden sm:inline-flex shadow-sm shadow-blue-500/20 font-semibold"
               >
                 <div className="w-4 h-4 rounded-full bg-white/20 text-[10px] font-bold flex items-center justify-center mr-1.5">
-                  {session.name[0]}
+                  {(session.name || session.displayName || session.email || "S")[0].toUpperCase()}
                 </div>
                 <span>Dashboard</span>
               </Button>

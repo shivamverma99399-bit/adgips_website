@@ -3,20 +3,22 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
   Lock,
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles,
   ShieldCheck,
+  UserPlus,
+  LogIn,
+  AlertCircle,
 } from "lucide-react";
 import { CollegeLogo } from "@/components/ui/college-logo";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { DEFAULT_STUDENT, saveSession } from "@/lib/auth";
+import { useAuth } from "@/components/providers/auth-provider";
 
 function GoogleLogo({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -41,53 +43,129 @@ function GoogleLogo({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+function formatAuthError(error: any): string {
+  const code = error?.code || "";
+  switch (code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "Invalid email or password. Please verify your credentials.";
+    case "auth/email-already-in-use":
+      return "An account with this email already exists. Please sign in instead.";
+    case "auth/weak-password":
+      return "Password should be at least 6 characters long.";
+    case "auth/invalid-email":
+      return "Please enter a valid email address.";
+    case "auth/popup-closed-by-user":
+      return "Google Sign-In was cancelled.";
+    case "auth/network-request-failed":
+      return "Network error. Please check your internet connection.";
+    default:
+      return error?.message || "Authentication failed. Please try again.";
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const { loginWithGoogle, loginWithEmail, signupWithEmail, resetPassword } = useAuth();
+  const { toast } = useToast();
+
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleGoogleQuickLogin = () => {
+  const handleGoogleAuth = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      saveSession({
-        ...DEFAULT_STUDENT,
-        email: email || DEFAULT_STUDENT.email,
-        name: email ? email.split("@")[0].replace(".", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : DEFAULT_STUDENT.name,
-      });
-
-      setIsLoading(false);
+    setErrorMessage(null);
+    try {
+      await loginWithGoogle();
       toast({
         title: "Google Sign-In Successful",
-        description: "Welcome to your Student Academic Dashboard!",
+        description: "Welcome to the ADGIPS Student Portal!",
         type: "success",
       });
       router.push("/dashboard");
-    }, 400);
+    } catch (err: any) {
+      const msg = formatAuthError(err);
+      setErrorMessage(msg);
+      toast({
+        title: "Sign-In Error",
+        description: msg,
+        type: "error",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      setErrorMessage("Please enter both email and password.");
+      return;
+    }
+
     setIsLoading(true);
+    setErrorMessage(null);
 
-    setTimeout(() => {
-      saveSession({
-        ...DEFAULT_STUDENT,
-        email: email || DEFAULT_STUDENT.email,
-        name: email ? email.split("@")[0].replace(".", " ").replace(/\b\w/g, (c) => c.toUpperCase()) : DEFAULT_STUDENT.name,
-      });
-
-      setIsLoading(false);
+    try {
+      if (isSignUp) {
+        await signupWithEmail(email, password);
+        toast({
+          title: "Account Created!",
+          description: "Your student profile has been initialized.",
+          type: "success",
+        });
+      } else {
+        await loginWithEmail(email, password);
+        toast({
+          title: "Authentication Successful",
+          description: `Welcome back, ${email}!`,
+          type: "success",
+        });
+      }
+      router.push("/dashboard");
+    } catch (err: any) {
+      const msg = formatAuthError(err);
+      setErrorMessage(msg);
       toast({
-        title: "Google Session Authenticated",
-        description: `Signed in as ${email || DEFAULT_STUDENT.email}!`,
+        title: isSignUp ? "Sign Up Error" : "Sign In Error",
+        description: msg,
+        type: "error",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your Gmail address in the field above to receive a reset link.",
+        type: "info",
+      });
+      return;
+    }
+
+    try {
+      await resetPassword(email);
+      toast({
+        title: "Password Reset Sent",
+        description: `A reset link has been dispatched to ${email}.`,
         type: "success",
       });
-      router.push("/dashboard");
-    }, 450);
+    } catch (err: any) {
+      toast({
+        title: "Reset Failed",
+        description: formatAuthError(err),
+        type: "error",
+      });
+    }
   };
 
   return (
@@ -108,10 +186,12 @@ export default function LoginPage() {
             <span>Google Workspace & SSO</span>
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            Sign in with Google
+            {isSignUp ? "Create Student Account" : "Sign in to IPVERSE"}
           </h1>
           <p className="text-xs text-slate-300">
-            Use your Gmail address or ADGIPS Google Workspace account to access the student portal.
+            {isSignUp
+              ? "Register with your student email to access campus passes, societies, and attendance."
+              : "Use your Gmail address or ADGIPS Google Workspace account to access the student portal."}
           </p>
         </div>
 
@@ -120,7 +200,7 @@ export default function LoginPage() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           type="button"
-          onClick={handleGoogleQuickLogin}
+          onClick={handleGoogleAuth}
           disabled={isLoading}
           className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-xl flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/20 disabled:opacity-50"
         >
@@ -132,17 +212,32 @@ export default function LoginPage() {
         <div className="relative flex items-center justify-center my-3">
           <div className="border-t border-white/10 w-full" />
           <span className="bg-[#071126] px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
-            or sign in with Gmail
+            or {isSignUp ? "register with email" : "sign in with email"}
           </span>
           <div className="border-t border-white/10 w-full" />
         </div>
 
-        {/* Form: Gmail ID & Password */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Gmail Address Field */}
+        {/* Error banner if present */}
+        <AnimatePresence>
+          {errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-200 text-xs flex items-center gap-2"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+              <span>{errorMessage}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Form: Email & Password */}
+        <form onSubmit={handleEmailAuth} className="space-y-4">
+          {/* Email Address Field */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Gmail Address / Google Account ID
+              Gmail / College Email Address
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -153,7 +248,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@gmail.com"
+                placeholder="scholar@gmail.com"
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/15 bg-white/10 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white/15 transition-all"
               />
             </div>
@@ -162,7 +257,7 @@ export default function LoginPage() {
           {/* Password Field */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Password
+              Password {isSignUp && <span className="text-[11px] text-slate-400 font-normal">(min. 6 characters)</span>}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -198,23 +293,18 @@ export default function LoginPage() {
               />
               <span>Stay signed in</span>
             </label>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                toast({
-                  title: "Google Account Recovery",
-                  description: "Use Google's official account recovery page or contact ADGIPS IT cell.",
-                  type: "info",
-                });
-              }}
-              className="text-blue-400 hover:text-blue-300 font-semibold"
-            >
-              Forgot password?
-            </a>
+            {!isSignUp && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
 
-          {/* Sign In Submit Button */}
+          {/* Sign In / Sign Up Submit Button */}
           <Button
             type="submit"
             variant="primary"
@@ -223,9 +313,16 @@ export default function LoginPage() {
             disabled={isLoading}
           >
             {isLoading ? (
-              <span>Signing in with Google...</span>
+              <span>Authenticating...</span>
+            ) : isSignUp ? (
+              <span className="flex items-center gap-2">
+                <UserPlus className="w-4 h-4" />
+                <span>Create Student Account</span>
+                <ArrowRight className="w-4 h-4" />
+              </span>
             ) : (
               <span className="flex items-center gap-2">
+                <LogIn className="w-4 h-4" />
                 <span>Sign In to Dashboard</span>
                 <ArrowRight className="w-4 h-4" />
               </span>
@@ -233,26 +330,29 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        {/* Quick Demo Dashboard Button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          type="button"
-          onClick={handleGoogleQuickLogin}
-          className="w-full p-2.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-300 hover:text-white text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Direct Access: Student Dashboard (Live Demo)</span>
-          </span>
-          <span className="text-[11px] font-semibold text-slate-400">&rarr;</span>
-        </motion.button>
+        {/* Toggle between Sign In and Sign Up */}
+        <div className="text-center pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setErrorMessage(null);
+            }}
+            className="text-xs text-slate-300 hover:text-white transition-colors cursor-pointer"
+          >
+            {isSignUp ? (
+              <span>Already registered? <strong className="text-blue-400 hover:underline">Sign In here</strong></span>
+            ) : (
+              <span>New to IPVERSE? <strong className="text-blue-400 hover:underline">Create a student account</strong></span>
+            )}
+          </button>
+        </div>
 
         {/* Support Footer & Security Notice */}
-        <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/10 space-y-1.5">
+        <div className="text-center text-xs text-slate-400 pt-3 border-t border-white/10 space-y-1.5">
           <p className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Protected by Google Identity Services & OAuth 2.0</span>
+            <span>Protected by Google Identity Services & Firebase Auth</span>
           </p>
           <div>
             <Link href="/" className="text-blue-400 hover:underline font-semibold inline-block">

@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================================
+    // HELPER FUNCTIONS
+    // ========================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'admin' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    // Default deny-all fallback
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ========================================================
+    // 1. USERS COLLECTION
+    // ========================================================
+    match /users/{userId} {
+      // User can read their own profile; admins can inspect all
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Initial profile creation: must match auth UID, role strictly defaults to 'student'
+      allow create: if isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.role == 'student'
+                    && request.resource.data.status == 'active';
+      
+      // Profile updates: user cannot self-escalate role, status, or UID
+      allow update: if (isOwner(userId)
+                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'status', 'uid', 'createdAt']))
+                    || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    // ========================================================
+    // 2. EVENTS COLLECTION
+    // ========================================================
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['registeredCount', 'updatedAt'])
+      );
+    }
+
+    // ========================================================
+    // 3. REGISTRATIONS COLLECTION
+    // ========================================================
+    match /registrations/{registrationId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.status == 'confirmed';
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+        || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ========================================================
+    // 4. ANNOUNCEMENTS COLLECTION
+    // ========================================================
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ========================================================
+    // 5. ACADEMIC RESOURCES COLLECTION
+    // ========================================================
+    match /resources/{resourceId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadsCount'])
+      );
+    }
+
+    // ========================================================
+    // 6. SOCIETIES & CLUBS COLLECTION
+    // ========================================================
+    match /societies/{societyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ========================================================
+    // 7. APPLICATIONS COLLECTION
+    // ========================================================
+    match /applications/{applicationId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================================
+    // 8. CONTACT MESSAGES COLLECTION
+    // ========================================================
+    match /contactMessages/{messageId} {
+      allow read: if isAdmin();
+      allow create: if request.resource.data.name is string
+                    && request.resource.data.email is string
+                    && request.resource.data.message is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.email.size() > 0
+                    && request.resource.data.message.size() > 0;
+      allow update, delete: if isAdmin();
+    }
+  }
+}

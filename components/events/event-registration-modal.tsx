@@ -19,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { getStoredSession, DEFAULT_STUDENT, registerStudentForEvent } from "@/lib/auth";
+import { useAuth } from "@/components/providers/auth-provider";
+import { registerForEventInFirestore } from "@/lib/firebase/firestore";
 
 interface EventRegistrationModalProps {
   event: EventItem;
@@ -34,6 +36,7 @@ export function EventRegistrationModal({
   onRegistered,
 }: EventRegistrationModalProps) {
   const { toast } = useToast();
+  const { user, profile, refreshProfile } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [enrollmentNo, setEnrollmentNo] = useState("");
@@ -44,19 +47,54 @@ export function EventRegistrationModal({
 
   useEffect(() => {
     if (isOpen) {
-      const session = getStoredSession() || DEFAULT_STUDENT;
-      setName(session.name || "Aryan Sharma");
-      setEmail(session.email || "aryan.sharma@gmail.com");
-      setEnrollmentNo(session.enrollmentNo || "04215602722");
+      const stored = getStoredSession() || DEFAULT_STUDENT;
+      const resolvedName = profile?.name || user?.displayName || stored.name || "Aryan Sharma";
+      const resolvedEmail = profile?.email || user?.email || stored.email || "aryan.sharma@gmail.com";
+      setName(resolvedName);
+      setEmail(resolvedEmail);
+      setEnrollmentNo(profile?.enrollmentNo || stored.enrollmentNo || "04215602722");
       setIsSuccess(false);
     }
-  }, [isOpen]);
+  }, [isOpen, profile, user]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      if (user) {
+        const res = await registerForEventInFirestore(
+          {
+            id: event.id,
+            title: event.title,
+            category: event.category,
+            date: event.date,
+            venue: event.venue,
+          },
+          {
+            uid: user.uid,
+            email: email || user.email || "",
+            name: name || user.displayName || "Student Scholar",
+            enrollmentNo,
+            semester,
+            branch,
+          }
+        );
+
+        if (!res.success) {
+          toast({
+            title: "Registration Alert",
+            description: res.message,
+            type: "info",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        await refreshProfile();
+      }
+
+      // Also persist to local session for instant UI continuity
       registerStudentForEvent({
         id: event.id,
         title: event.title,
@@ -65,9 +103,7 @@ export function EventRegistrationModal({
         venue: event.venue,
       });
 
-      setIsSubmitting(false);
       setIsSuccess(true);
-
       toast({
         title: "Registration Confirmed!",
         description: `Your pass for ${event.title} is now active on your Student Dashboard.`,
@@ -75,7 +111,15 @@ export function EventRegistrationModal({
       });
 
       if (onRegistered) onRegistered();
-    }, 600);
+    } catch (err: any) {
+      toast({
+        title: "Registration Error",
+        description: err.message || "Could not complete registration.",
+        type: "error",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
