@@ -3,6 +3,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   collection,
   query,
   where,
@@ -67,54 +68,11 @@ export async function createUserProfileIfNew(user: {
     name: user.displayName || fallbackName,
     email: user.email || "",
     photoURL: user.photoURL || null,
-    role: "student", // Default role is strictly student
+    role: "student",
     status: "active",
-    enrollmentNo: "04215602722",
-    programme: "B.Tech in Artificial Intelligence & Machine Learning",
-    department: "Department of AI & Data Science",
-    semester: 6,
-    batch: "2023 – 2027",
-    cgpa: 8.92,
-    attendancePercent: 86.4,
-    creditsEarned: 114,
-    totalCredits: 152,
     registeredEvents: [],
     clubMemberships: [],
     downloadedResources: [],
-    subjectAttendance: [
-      {
-        code: "ETCS-302",
-        subject: "Data Mining & Business Intelligence",
-        attended: 23,
-        total: 25,
-        percentage: 92,
-        status: "good",
-      },
-      {
-        code: "ETAIDS-304",
-        subject: "Artificial Neural Networks & Deep Learning",
-        attended: 21,
-        total: 25,
-        percentage: 84,
-        status: "good",
-      },
-      {
-        code: "ETIT-306",
-        subject: "Cloud Computing & Microservices Architecture",
-        attended: 22,
-        total: 25,
-        percentage: 88,
-        status: "good",
-      },
-      {
-        code: "HVPE-102",
-        subject: "Universal Human Values & Professional Ethics",
-        attended: 19,
-        total: 25,
-        percentage: 76,
-        status: "warning",
-      },
-    ],
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -298,8 +256,170 @@ export async function incrementResourceDownloadCount(resourceId: string): Promis
 }
 
 // ==========================================
-// 5. APPLICATIONS (CLUBS & SOCIETIES)
+// 6. CMS CONTENT MANAGEMENT (EVENTS, RESOURCES, NOTICES, GALLERY)
 // ==========================================
+
+// --- Academic Resources ---
+export async function createAcademicResourceInFirestore(
+  resource: Omit<AcademicResourceDocument, "id" | "createdAt" | "downloadsCount"> & { id?: string },
+  adminInfo?: { uid?: string; email?: string }
+): Promise<string> {
+  const resourceId = resource.id || `res_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const resRef = doc(db, "resources", resourceId);
+
+  await setDoc(resRef, {
+    ...resource,
+    id: resourceId,
+    downloadsCount: 0,
+    status: resource.status || "published",
+    publishedBy: adminInfo?.email || "Administrator",
+    publishedByUid: adminInfo?.uid || null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return resourceId;
+}
+
+export async function updateAcademicResourceInFirestore(
+  id: string,
+  updates: Partial<AcademicResourceDocument>
+): Promise<void> {
+  const resRef = doc(db, "resources", id);
+  await updateDoc(resRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteAcademicResourceFromFirestore(id: string): Promise<void> {
+  const resRef = doc(db, "resources", id);
+  await deleteDoc(resRef);
+}
+
+// --- Events ---
+export async function createEventInFirestore(
+  event: Omit<EventDocument, "id" | "createdAt" | "registeredCount"> & { id?: string },
+  adminInfo?: { uid?: string; email?: string }
+): Promise<string> {
+  const eventId = event.id || `event_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const eventRef = doc(db, "events", eventId);
+
+  await setDoc(eventRef, {
+    ...event,
+    id: eventId,
+    registeredCount: 0,
+    publishedBy: adminInfo?.email || "Administrator",
+    publishedByUid: adminInfo?.uid || null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return eventId;
+}
+
+export async function updateEventInFirestore(
+  id: string,
+  updates: Partial<EventDocument>
+): Promise<void> {
+  const eventRef = doc(db, "events", id);
+  await updateDoc(eventRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteEventFromFirestore(id: string): Promise<void> {
+  const eventRef = doc(db, "events", id);
+  await deleteDoc(eventRef);
+}
+
+// --- Announcements / Circulars ---
+export async function createAnnouncementInFirestore(
+  announcement: Omit<AnnouncementDocument, "id" | "createdAt"> & { id?: string },
+  adminInfo?: { uid?: string; email?: string }
+): Promise<string> {
+  const noticeId = announcement.id || `notice_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const noticeRef = doc(db, "announcements", noticeId);
+
+  await setDoc(noticeRef, {
+    ...announcement,
+    id: noticeId,
+    publishedBy: adminInfo?.email || "Administrator",
+    publishedByUid: adminInfo?.uid || null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return noticeId;
+}
+
+export async function updateAnnouncementInFirestore(
+  id: string,
+  updates: Partial<AnnouncementDocument>
+): Promise<void> {
+  const noticeRef = doc(db, "announcements", id);
+  await updateDoc(noticeRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteAnnouncementFromFirestore(id: string): Promise<void> {
+  const noticeRef = doc(db, "announcements", id);
+  await deleteDoc(noticeRef);
+}
+
+// --- Campus Photo Gallery ---
+export interface GalleryItemDocument {
+  id: string;
+  title: string;
+  category: string;
+  description?: string;
+  imageUrl: string;
+  storagePath?: string;
+  eventName?: string;
+  date?: string;
+  publishedBy?: string;
+  publishedByUid?: string | null;
+  createdAt?: any;
+}
+
+export async function getGalleryFromFirestore(): Promise<GalleryItemDocument[]> {
+  try {
+    const q = query(collection(db, "gallery"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as GalleryItemDocument[];
+  } catch (error) {
+    console.error("Error fetching gallery items:", error);
+    return [];
+  }
+}
+
+export async function createGalleryItemInFirestore(
+  item: Omit<GalleryItemDocument, "id" | "createdAt"> & { id?: string },
+  adminInfo?: { uid?: string; email?: string }
+): Promise<string> {
+  const galleryId = item.id || `gallery_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const galleryRef = doc(db, "gallery", galleryId);
+
+  await setDoc(galleryRef, {
+    ...item,
+    id: galleryId,
+    publishedBy: adminInfo?.email || "Administrator",
+    publishedByUid: adminInfo?.uid || null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return galleryId;
+}
+
+export async function deleteGalleryItemFromFirestore(id: string): Promise<void> {
+  const galleryRef = doc(db, "gallery", id);
+  await deleteDoc(galleryRef);
+}
+
 
 export async function applyForSocietyInFirestore(
   society: { id: string; name: string; category: string },

@@ -76,6 +76,9 @@ export interface EventDocument {
   schedule?: EventScheduleItem[];
   capacity?: number;
   registeredCount?: number;
+  storagePath?: string;
+  publishedBy?: string;
+  publishedByUid?: string | null;
   createdAt?: any;
   updatedAt?: any;
 }
@@ -107,7 +110,12 @@ export interface AnnouncementDocument {
   summary: string;
   details?: string;
   fileSize?: string;
+  fileUrl?: string;
+  storagePath?: string;
+  publishedBy?: string;
+  publishedByUid?: string | null;
   createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface AcademicResourceDocument {
@@ -124,7 +132,13 @@ export interface AcademicResourceDocument {
   fileSize: string;
   downloadsCount: number;
   description: string;
+  fileUrl?: string;
+  storagePath?: string;
+  status?: "published" | "archived" | "draft";
+  publishedBy?: string;
+  publishedByUid?: string | null;
   createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface SocietyDocument {

@@ -125,5 +125,13 @@ service cloud.firestore {
                     && request.resource.data.message.size() > 0;
       allow update, delete: if isAdmin();
     }
+
+    // ========================================================
+    // 9. GALLERY COLLECTION
+    // ========================================================
+    match /gallery/{photoId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
