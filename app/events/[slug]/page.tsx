@@ -15,7 +15,6 @@ import {
   Layers,
   Archive,
 } from "lucide-react";
-import { eventsData } from "@/data/events";
 import { SectionContainer } from "@/components/ui/section-container";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +22,8 @@ import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/ui/event-card";
 import { EventActionButton } from "@/components/events/event-action-button";
 import { getNormalizedEventStatus, getRelatedEvents } from "@/lib/event-utils";
+import { getEventBySlugFromFirestore, getEventsFromFirestore } from "@/lib/firebase/firestore";
+import { EventItem } from "@/types";
 
 interface EventDetailPageProps {
   params: Promise<{
@@ -36,31 +37,84 @@ export async function generateMetadata({
   params,
 }: EventDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const event = eventsData.find((e) => e.slug === slug || e.id === slug);
+  const eventDoc = await getEventBySlugFromFirestore(slug);
 
-  if (!event) {
+  if (!eventDoc) {
     return {
       title: "Event Not Found — ADGIPS Delhi",
     };
   }
 
   return {
-    title: `${event.title} — ADGIPS Campus Events`,
-    description: event.shortDescription || event.description,
+    title: `${eventDoc.title} — ADGIPS Campus Events`,
+    description: eventDoc.shortDescription || eventDoc.description,
   };
 }
 
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { slug } = await params;
-  const event = eventsData.find((e) => e.slug === slug || e.id === slug);
+  const [eventDoc, allDocs] = await Promise.all([
+    getEventBySlugFromFirestore(slug),
+    getEventsFromFirestore(),
+  ]);
 
-  if (!event) {
+  if (!eventDoc) {
     notFound();
   }
 
+  const event: EventItem = {
+    id: eventDoc.id,
+    title: eventDoc.title,
+    subtitle: eventDoc.subtitle,
+    slug: eventDoc.slug,
+    description: eventDoc.description,
+    shortDescription: eventDoc.shortDescription,
+    date: eventDoc.date,
+    time: eventDoc.time,
+    venue: eventDoc.venue,
+    category: eventDoc.category,
+    status: eventDoc.status,
+    image: eventDoc.image || "/images/engineering.jpg",
+    poster: eventDoc.image || "/images/engineering.jpg",
+    featured: eventDoc.featured,
+    registrationLink: eventDoc.registrationLink,
+    eligibility: eventDoc.eligibility || "Open to all GGSIPU Affiliated Students",
+    organizedBy: eventDoc.organizedBy || "ADGIPS Administration",
+    department: eventDoc.department,
+    tags: eventDoc.tags || [],
+    activities: eventDoc.activities || [],
+    highlights: eventDoc.highlights || [],
+    schedule: eventDoc.schedule || [],
+  };
+
+  const allEvents: EventItem[] = allDocs.map((d) => ({
+    id: d.id,
+    title: d.title,
+    subtitle: d.subtitle,
+    slug: d.slug,
+    description: d.description,
+    shortDescription: d.shortDescription,
+    date: d.date,
+    time: d.time,
+    venue: d.venue,
+    category: d.category,
+    status: d.status,
+    image: d.image || "/images/engineering.jpg",
+    poster: d.image || "/images/engineering.jpg",
+    featured: d.featured,
+    registrationLink: d.registrationLink,
+    eligibility: d.eligibility || "Open to all GGSIPU Affiliated Students",
+    organizedBy: d.organizedBy || "ADGIPS Administration",
+    department: d.department,
+    tags: d.tags || [],
+    activities: d.activities || [],
+    highlights: d.highlights || [],
+    schedule: d.schedule || [],
+  }));
+
   const normalizedStatus = getNormalizedEventStatus(event);
   const isPast = normalizedStatus === "past";
-  const relatedEvents = getRelatedEvents(event, eventsData, 3);
+  const relatedEvents = getRelatedEvents(event, allEvents, 3);
 
   return (
     <div className="flex-1 bg-transparent pt-2 pb-12">

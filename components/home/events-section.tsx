@@ -1,15 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, MapPin, Clock, Calendar, Sparkles, ChevronRight, Trophy, Shield, Scale } from "lucide-react";
-import { eventsData } from "@/data/events";
+import { ArrowRight, MapPin, Clock, Calendar, Sparkles, ChevronRight, Trophy, Shield, Scale, Loader2 } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getEventsFromFirestore } from "@/lib/firebase/firestore";
+import { EventItem } from "@/types";
 import {
   sectionVariants,
   staggerContainer,
@@ -18,7 +19,80 @@ import {
 } from "@/lib/animations";
 
 export function EventsSection() {
-  if (!eventsData || eventsData.length === 0) {
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadEvents() {
+      try {
+        setIsLoading(true);
+        const docs = await getEventsFromFirestore();
+        if (isMounted) {
+          const mapped: EventItem[] = docs.map((d) => ({
+            id: d.id,
+            title: d.title,
+            subtitle: d.subtitle,
+            slug: d.slug,
+            description: d.description,
+            shortDescription: d.shortDescription,
+            date: d.date,
+            time: d.time,
+            venue: d.venue,
+            category: d.category,
+            status: d.status,
+            image: d.image || "/images/engineering.jpg",
+            poster: d.image || "/images/engineering.jpg",
+            featured: d.featured,
+            registrationLink: d.registrationLink,
+            eligibility: d.eligibility || "Open to all students",
+            organizedBy: d.organizedBy || "ADGIPS Administration",
+            department: d.department,
+            tags: d.tags || [],
+            activities: d.activities || [],
+            highlights: d.highlights || [],
+            schedule: d.schedule || [],
+          }));
+          setEvents(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load events for homepage:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    loadEvents();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <SectionContainer id="events" className="bg-transparent border-b border-white/10 py-16 sm:py-20">
+        <SectionHeading
+          pill="03 / Experience Campus Life"
+          pillVariant="secondary"
+          title="The Pulse of Campus Life &"
+          highlightText="Collegiate Fiestas"
+          description="Beyond lectures and laboratories, ADGIPS thrives with student expression. From flagship national moot court debates to annual cultural festivals, campus events will be announced here."
+          align="split"
+          action={
+            <Button variant="outline" href="/events" className="group">
+              <span>View Events Archive</span>
+              <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          }
+        />
+        <div className="p-10 sm:p-14 text-center rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-md">
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-400">Loading campus calendar...</p>
+        </div>
+      </SectionContainer>
+    );
+  }
+
+  if (events.length === 0) {
     return (
       <SectionContainer id="events" className="bg-transparent border-b border-white/10 py-16 sm:py-20">
         <SectionHeading
@@ -46,12 +120,12 @@ export function EventsSection() {
     );
   }
 
-  const utkarshFest = eventsData.find((e) => e.id === "utkarsh-fest") || eventsData[0];
-  const aiSummit = eventsData.find((e) => e.id === "industry-ai-summit") || eventsData[1];
-  const mootCourt = eventsData.find((e) => e.id === "national-moot-court") || eventsData[2];
-  const sportsMeet = eventsData.find((e) => e.id === "annual-sports-meet");
-  const cyberWorkshop = eventsData.find((e) => e.id === "cyber-forensics-workshop");
-  const legalAid = eventsData.find((e) => e.id === "legal-aid-community-conclave");
+  const utkarshFest = events.find((e) => e.featured) || events[0];
+  const aiSummit = events[1] || utkarshFest;
+  const mootCourt = events[2] || utkarshFest;
+  const sportsMeet = events[3];
+  const cyberWorkshop = events[4];
+  const legalAid = events[5];
 
   return (
     <SectionContainer id="events" className="bg-transparent border-b border-white/10">

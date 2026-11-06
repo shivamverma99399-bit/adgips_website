@@ -12,10 +12,12 @@ import {
   ArrowRight,
   Download,
 } from "lucide-react";
-import { eventsData } from "@/data/events";
-import { opportunitiesData } from "@/data/opportunities";
-import { announcementsData } from "@/data/announcements";
-import { initialResourcesData, AcademicResource } from "@/data/resources";
+import {
+  getEventsFromFirestore,
+  getOpportunitiesFromFirestore,
+  getAnnouncementsFromFirestore,
+  getResourcesFromFirestore,
+} from "@/lib/firebase/firestore";
 import { Badge } from "./badge";
 import { useToast } from "./toast";
 
@@ -27,12 +29,43 @@ interface SearchModalProps {
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "events" | "opportunities" | "resources" | "notices">("all");
+  const [eventsList, setEventsList] = useState<any[]>([]);
+  const [opportunitiesList, setOpportunitiesList] = useState<any[]>([]);
+  const [announcementsList, setAnnouncementsList] = useState<any[]>([]);
+  const [resourcesList, setResourcesList] = useState<any[]>([]);
   const { toast } = useToast();
 
   const handleClose = useCallback(() => {
     setQuery("");
     onClose();
   }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const [evts, opps, notices, res] = await Promise.all([
+          getEventsFromFirestore(),
+          getOpportunitiesFromFirestore(),
+          getAnnouncementsFromFirestore(),
+          getResourcesFromFirestore(),
+        ]);
+        if (isMounted) {
+          setEventsList(evts);
+          setOpportunitiesList(opps);
+          setAnnouncementsList(notices);
+          setResourcesList(res);
+        }
+      } catch (err) {
+        console.error("Failed to load search data:", err);
+      }
+    }
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -61,55 +94,55 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   const filteredEvents = useMemo(() => {
     if (activeTab !== "all" && activeTab !== "events") return [];
-    if (!query.trim()) return eventsData.slice(0, 3);
+    if (!query.trim()) return eventsList.slice(0, 3);
     const q = query.toLowerCase();
-    return eventsData.filter(
+    return eventsList.filter(
       (e) =>
-        e.title.toLowerCase().includes(q) ||
-        e.category.toLowerCase().includes(q) ||
+        e.title?.toLowerCase().includes(q) ||
+        e.category?.toLowerCase().includes(q) ||
         (e.department && e.department.toLowerCase().includes(q)) ||
-        e.tags.some((t) => t.toLowerCase().includes(q))
+        (e.tags && Array.isArray(e.tags) && e.tags.some((t: string) => t.toLowerCase().includes(q)))
     );
-  }, [query, activeTab]);
+  }, [eventsList, query, activeTab]);
 
   const filteredOpportunities = useMemo(() => {
     if (activeTab !== "all" && activeTab !== "opportunities") return [];
-    if (!query.trim()) return opportunitiesData.slice(0, 3);
+    if (!query.trim()) return opportunitiesList.slice(0, 3);
     const q = query.toLowerCase();
-    return opportunitiesData.filter(
+    return opportunitiesList.filter(
       (o) =>
-        o.title.toLowerCase().includes(q) ||
-        o.organization.toLowerCase().includes(q) ||
-        o.category.toLowerCase().includes(q) ||
-        o.tags.some((t) => t.toLowerCase().includes(q))
+        o.title?.toLowerCase().includes(q) ||
+        o.organization?.toLowerCase().includes(q) ||
+        o.category?.toLowerCase().includes(q) ||
+        (o.tags && Array.isArray(o.tags) && o.tags.some((t: string) => t.toLowerCase().includes(q)))
     );
-  }, [query, activeTab]);
+  }, [opportunitiesList, query, activeTab]);
 
   const filteredAnnouncements = useMemo(() => {
     if (activeTab !== "all" && activeTab !== "notices") return [];
-    if (!query.trim()) return announcementsData.slice(0, 3);
+    if (!query.trim()) return announcementsList.slice(0, 3);
     const q = query.toLowerCase();
-    return announcementsData.filter(
+    return announcementsList.filter(
       (a) =>
-        a.title.toLowerCase().includes(q) ||
-        a.category.toLowerCase().includes(q) ||
-        a.summary.toLowerCase().includes(q)
+        a.title?.toLowerCase().includes(q) ||
+        a.category?.toLowerCase().includes(q) ||
+        a.summary?.toLowerCase().includes(q)
     );
-  }, [query, activeTab]);
+  }, [announcementsList, query, activeTab]);
 
   const filteredResources = useMemo(() => {
     if (activeTab !== "all" && activeTab !== "resources") return [];
-    if (!query.trim()) return initialResourcesData.slice(0, 3);
+    if (!query.trim()) return resourcesList.slice(0, 3);
     const q = query.toLowerCase();
-    return initialResourcesData.filter(
+    return resourcesList.filter(
       (r) =>
-        r.title.toLowerCase().includes(q) ||
-        r.code.toLowerCase().includes(q) ||
-        r.stream.toLowerCase().includes(q) ||
-        r.type.toLowerCase().includes(q) ||
-        r.department.toLowerCase().includes(q)
+        r.title?.toLowerCase().includes(q) ||
+        r.code?.toLowerCase().includes(q) ||
+        r.stream?.toLowerCase().includes(q) ||
+        r.type?.toLowerCase().includes(q) ||
+        r.department?.toLowerCase().includes(q)
     );
-  }, [query, activeTab]);
+  }, [resourcesList, query, activeTab]);
 
   const totalResults =
     filteredEvents.length +

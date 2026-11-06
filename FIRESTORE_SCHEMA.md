@@ -139,9 +139,38 @@ This document details the Cloud Firestore database architecture, collection sche
 
 ---
 
+### `opportunities`
+- **Document ID**: `${opportunityId}`
+- **Purpose**: Student opportunities, hackathons, internships, scholarships, and innovation competitions.
+- **Access**: Public read access for all students/visitors; CMS write access strictly restricted to verified administrators (`isAdmin()`).
+- **Fields**:
+  | Field | Type | Description |
+  | :--- | :--- | :--- |
+  | `id` | `string` | Unique opportunity identifier |
+  | `title` | `string` | Opportunity headline |
+  | `organization` | `string` | Host or partnering institution |
+  | `category` | `string` | `"Hackathon" \| "Internship" \| "Competition" \| "Scholarship" \| "Workshop" \| "Student Programme"` |
+  | `deadline` | `string` | Application deadline |
+  | `eligibility` | `string` | Eligibility criteria |
+  | `location` | `string` | Campus or external venue |
+  | `mode` | `string` | `"Online" \| "Offline" \| "Hybrid"` |
+  | `applyLink` | `string` | External or direct application portal URL |
+  | `stipendOrPrize` | `string?` | Prize or stipend details |
+  | `tags` | `Array<string>` | Searchable tags |
+  | `featured` | `boolean?` | Spotlight challenge showcase priority |
+  | `verifiedExternal` | `boolean?` | Verified partner status |
+  | `status` | `string?` | `"published" \| "archived" \| "draft"` |
+  | `publishedBy` | `string?` | Administrator email |
+  | `publishedByUid` | `string?` | Administrator Firebase UID |
+  | `createdAt` | `timestamp` | Publishing timestamp |
+  | `updatedAt` | `timestamp` | Last updated timestamp |
+
+---
+
 ## 2. Composite Indexes (`firestore.indexes.json`)
 
 1. **`registrations`**:
    - `eventId` (ASC) + `registeredAt` (DESC)
 2. **`applications`**:
    - `societyId` (ASC) + `submittedAt` (DESC)
+

@@ -149,15 +149,16 @@ function LiquidLensCarouselInner({
 
   // Autoplay timer
   useEffect(() => {
-    if (!isPlaying || isHovered || animState.current.isDragging) return;
+    if (!isPlaying || isHovered || animState.current.isDragging || events.length <= 1) return;
     const timer = setInterval(() => {
       goToNext();
     }, autoPlayInterval);
     return () => clearInterval(timer);
-  }, [isPlaying, isHovered, autoPlayInterval, goToNext]);
+  }, [isPlaying, isHovered, autoPlayInterval, goToNext, events.length]);
 
   // Keyboard navigation
   useEffect(() => {
+    if (events.length <= 1) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!containerRef.current?.contains(document.activeElement) && document.activeElement !== document.body) {
         return;
@@ -172,7 +173,7 @@ function LiquidLensCarouselInner({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [goToNext, goToPrev]);
+  }, [goToNext, goToPrev, events.length]);
 
   // Mouse wheel navigation
   useEffect(() => {
@@ -802,10 +803,18 @@ function LiquidLensCarouselInner({
 
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <Compass className="w-3.5 h-3.5 text-blue-400" />
-          <span className="hidden md:inline">Swipe, drag, or use arrow keys</span>
-          <span className="font-mono text-slate-300 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
-            {String(currentIndex + 1).padStart(2, "0")} / {String(events.length).padStart(2, "0")}
-          </span>
+          {events.length > 1 ? (
+            <>
+              <span className="hidden md:inline">Swipe, drag, or use arrow keys</span>
+              <span className="font-mono text-slate-300 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
+                {String(currentIndex + 1).padStart(2, "0")} / {String(events.length).padStart(2, "0")}
+              </span>
+            </>
+          ) : (
+            <span className="font-mono text-slate-300 bg-white/5 px-2 py-0.5 rounded-md border border-white/10">
+              Featured Showcase
+            </span>
+          )}
         </div>
       </div>
 
@@ -925,62 +934,64 @@ function LiquidLensCarouselInner({
         </div>
       )}
 
-      {/* Bottom Carousel Controls Bar */}
-      <div className="px-6 py-4 bg-slate-950 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
-        {/* Navigation Arrows & Play/Pause */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goToPrev}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Previous Slide"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={goToNext}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Next Slide"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setIsPlaying((prev) => !prev)}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-1.5 px-3 text-xs"
-            aria-label={isPlaying ? "Pause Autoplay" : "Resume Autoplay"}
-          >
-            {isPlaying ? (
-              <>
-                <Pause className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Pause</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden sm:inline">Play</span>
-              </>
-            )}
-          </button>
-        </div>
+      {/* Bottom Carousel Controls Bar (visible when multiple slides exist) */}
+      {events.length > 1 && (
+        <div className="px-6 py-4 bg-slate-950 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
+          {/* Navigation Arrows & Play/Pause */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={goToPrev}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Previous Slide"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={goToNext}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Next Slide"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsPlaying((prev) => !prev)}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/15 text-white border border-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center gap-1.5 px-3 text-xs"
+              aria-label={isPlaying ? "Pause Autoplay" : "Resume Autoplay"}
+            >
+              {isPlaying ? (
+                <>
+                  <Pause className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Pause</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">Play</span>
+                </>
+              )}
+            </button>
+          </div>
 
-        {/* Interactive Slide Dots / Pills */}
-        <div className="flex items-center gap-1.5">
-          {events.map((evt, idx) => {
-            const isActive = idx === currentIndex;
-            return (
-              <button
-                key={evt.id || idx}
-                onClick={() => goToIndex(idx)}
-                className={`transition-all duration-300 rounded-full h-2 focus:outline-none ${
-                  isActive
-                    ? "w-8 bg-gradient-to-r from-emerald-400 to-blue-500 shadow-md shadow-emerald-500/20"
-                    : "w-2 bg-white/20 hover:bg-white/40"
-                }`}
-                aria-label={`Jump to slide ${idx + 1}: ${evt.title}`}
-              />
-            );
-          })}
+          {/* Interactive Slide Dots / Pills */}
+          <div className="flex items-center gap-1.5">
+            {events.map((evt, idx) => {
+              const isActive = idx === currentIndex;
+              return (
+                <button
+                  key={evt.id || idx}
+                  onClick={() => goToIndex(idx)}
+                  className={`transition-all duration-300 rounded-full h-2 focus:outline-none ${
+                    isActive
+                      ? "w-8 bg-gradient-to-r from-emerald-400 to-blue-500 shadow-md shadow-emerald-500/20"
+                      : "w-2 bg-white/20 hover:bg-white/40"
+                  }`}
+                  aria-label={`Jump to slide ${idx + 1}: ${evt.title}`}
+                />
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

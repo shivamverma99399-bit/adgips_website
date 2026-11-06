@@ -24,6 +24,7 @@ import {
   SocietyDocument,
   ApplicationDocument,
   ContactMessageDocument,
+  OpportunityDocument,
 } from "@/types/backend";
 
 // ==========================================
@@ -109,15 +110,52 @@ export async function updateUserProfile(
 
 export async function getEventsFromFirestore(): Promise<EventDocument[]> {
   try {
-    const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    return snap.docs.map((docSnap) => ({
+    const snap = await getDocs(collection(db, "events"));
+    const events = snap.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
     })) as EventDocument[];
+
+    return events.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
   } catch (error) {
     console.error("Error fetching events from Firestore:", error);
     return [];
+  }
+}
+
+export async function getEventBySlugFromFirestore(slug: string): Promise<EventDocument | null> {
+  try {
+    // 1. Direct match by slug
+    const qSlug = query(collection(db, "events"), where("slug", "==", slug), limit(1));
+    const snapSlug = await getDocs(qSlug);
+    if (!snapSlug.empty) {
+      const d = snapSlug.docs[0];
+      return { id: d.id, ...d.data() } as EventDocument;
+    }
+
+    // 2. Fallback: match by document ID
+    const docRef = doc(db, "events", slug);
+    const snapDoc = await getDoc(docRef);
+    if (snapDoc.exists()) {
+      return { id: snapDoc.id, ...snapDoc.data() } as EventDocument;
+    }
+
+    // 3. Fallback: scan all events for slug or id match (in case of URL encoding / normalization)
+    const allEvents = await getEventsFromFirestore();
+    const found = allEvents.find(
+      (e) =>
+        e.slug === slug ||
+        e.id === slug ||
+        e.slug === decodeURIComponent(slug)
+    );
+    return found || null;
+  } catch (error) {
+    console.error(`Error fetching event by slug "${slug}":`, error);
+    return null;
   }
 }
 
@@ -418,6 +456,58 @@ export async function createGalleryItemInFirestore(
 export async function deleteGalleryItemFromFirestore(id: string): Promise<void> {
   const galleryRef = doc(db, "gallery", id);
   await deleteDoc(galleryRef);
+}
+
+// --- Opportunities & Hackathons ---
+export async function getOpportunitiesFromFirestore(): Promise<OpportunityDocument[]> {
+  try {
+    const snap = await getDocs(collection(db, "opportunities"));
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as OpportunityDocument[];
+    return items.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
+  } catch (error) {
+    console.error("Error fetching opportunities from Firestore:", error);
+    return [];
+  }
+}
+
+export async function createOpportunityInFirestore(
+  opp: Omit<OpportunityDocument, "id" | "createdAt"> & { id?: string },
+  adminInfo?: { uid?: string; email?: string }
+): Promise<string> {
+  const oppId = opp.id || `opp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const oppRef = doc(db, "opportunities", oppId);
+
+  await setDoc(oppRef, {
+    ...opp,
+    id: oppId,
+    status: opp.status || "published",
+    publishedBy: adminInfo?.email || "Administrator",
+    publishedByUid: adminInfo?.uid || null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return oppId;
+}
+
+export async function updateOpportunityInFirestore(
+  id: string,
+  updates: Partial<OpportunityDocument>
+): Promise<void> {
+  const oppRef = doc(db, "opportunities", id);
+  await updateDoc(oppRef, {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteOpportunityFromFirestore(id: string): Promise<void> {
+  const oppRef = doc(db, "opportunities", id);
+  await deleteDoc(oppRef);
 }
 
 

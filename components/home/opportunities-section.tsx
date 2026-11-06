@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Award, Calendar, Bookmark, ExternalLink, Share2, Check } from "lucide-react";
-import { opportunitiesData } from "@/data/opportunities";
+import { Award, Calendar, Bookmark, ExternalLink, Share2, Check, Loader2 } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
+import { getOpportunitiesFromFirestore } from "@/lib/firebase/firestore";
+import { OpportunityItem } from "@/types";
 import {
   sectionVariants,
   staggerContainer,
@@ -18,8 +19,49 @@ import {
 
 export function OpportunitiesSection() {
   const { toast } = useToast();
+  const [opportunities, setOpportunities] = useState<OpportunityItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadOpportunities() {
+      try {
+        setIsLoading(true);
+        const docs = await getOpportunitiesFromFirestore();
+        if (isMounted) {
+          const mapped: OpportunityItem[] = docs
+            .filter((d) => d.status !== "draft" && d.status !== "archived")
+            .map((d) => ({
+              id: d.id,
+              title: d.title,
+              organization: d.organization,
+              category: d.category,
+              deadline: d.deadline,
+              eligibility: d.eligibility,
+              location: d.location,
+              mode: d.mode,
+              applyLink: d.applyLink,
+              stipendOrPrize: d.stipendOrPrize,
+              tags: d.tags || [],
+              featured: d.featured,
+              verifiedExternal: d.verifiedExternal,
+            }));
+          setOpportunities(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load opportunities from Firestore:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    loadOpportunities();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const toggleBookmark = (id: string, title: string) => {
     setBookmarkedIds((prev) => {
@@ -55,7 +97,25 @@ export function OpportunitiesSection() {
     }
   };
 
-  if (!opportunitiesData || opportunitiesData.length === 0) {
+  if (isLoading) {
+    return (
+      <SectionContainer id="opportunities" className="bg-transparent border-b border-white/10 py-16 sm:py-20">
+        <SectionHeading
+          pill="04 / Find Your Next Opportunity"
+          pillVariant="secondary"
+          title="Hackathons, Internships &"
+          highlightText="Innovation Sprints"
+          description="Explore national hackathons, government ideathons, corporate technical internships, and collegiate competitions open to ADGIPS students."
+        />
+        <div className="p-10 sm:p-14 text-center rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-md">
+          <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-3" />
+          <p className="text-sm text-slate-400">Loading collegiate opportunities...</p>
+        </div>
+      </SectionContainer>
+    );
+  }
+
+  if (opportunities.length === 0) {
     return (
       <SectionContainer id="opportunities" className="bg-transparent border-b border-white/10 py-16 sm:py-20">
         <SectionHeading
@@ -76,8 +136,8 @@ export function OpportunitiesSection() {
     );
   }
 
-  const spotlightOpp = opportunitiesData[0];
-  const listOpps = opportunitiesData.slice(1, 5);
+  const spotlightOpp = opportunities.find((o) => o.featured) || opportunities[0];
+  const listOpps = opportunities.filter((o) => o.id !== spotlightOpp.id).slice(0, 4);
 
   return (
     <SectionContainer id="opportunities" className="bg-transparent border-b border-white/10">

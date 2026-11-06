@@ -25,6 +25,7 @@ import {
   X,
   Search,
   FileUp,
+  Award,
 } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -51,11 +52,12 @@ import {
   AcademicResourceDocument,
   AnnouncementDocument,
   RegistrationDocument,
+  OpportunityDocument,
 } from "@/types/backend";
-import { EventCategory } from "@/types";
-import { GalleryItemDocument } from "@/lib/firebase/firestore";
+import { EventCategory, OpportunityCategory } from "@/types";
+import { GalleryItemDocument, getOpportunitiesFromFirestore } from "@/lib/firebase/firestore";
 
-type AdminTab = "events" | "resources" | "notices" | "gallery" | "registrations";
+type AdminTab = "events" | "opportunities" | "resources" | "notices" | "gallery" | "registrations";
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -67,6 +69,7 @@ export default function AdminPage() {
 
   // Data collections state
   const [eventsList, setEventsList] = useState<EventDocument[]>([]);
+  const [opportunitiesList, setOpportunitiesList] = useState<OpportunityDocument[]>([]);
   const [resourcesList, setResourcesList] = useState<AcademicResourceDocument[]>([]);
   const [noticesList, setNoticesList] = useState<AnnouncementDocument[]>([]);
   const [galleryList, setGalleryList] = useState<GalleryItemDocument[]>([]);
@@ -78,13 +81,13 @@ export default function AdminPage() {
 
   // Edit modal state
   const [editingItem, setEditingItem] = useState<{
-    type: "event" | "resource" | "notice" | "gallery";
+    type: "event" | "opportunity" | "resource" | "notice" | "gallery";
     data: any;
   } | null>(null);
 
   // Preview modal state
   const [previewItem, setPreviewItem] = useState<{
-    type: "event" | "resource" | "notice" | "gallery";
+    type: "event" | "opportunity" | "resource" | "notice" | "gallery";
     data: any;
   } | null>(null);
 
@@ -109,6 +112,19 @@ export default function AdminPage() {
   const [eventEligibility, setEventEligibility] = useState("Open to all students");
   const [eventRegistrationLink, setEventRegistrationLink] = useState("");
   const [eventStatus, setEventStatus] = useState<"upcoming" | "ongoing" | "past">("upcoming");
+
+  // 1b. Opportunity Form
+  const [oppTitle, setOppTitle] = useState("");
+  const [oppOrg, setOppOrg] = useState("");
+  const [oppCategory, setOppCategory] = useState<OpportunityCategory>("Hackathon");
+  const [oppDeadline, setOppDeadline] = useState("");
+  const [oppEligibility, setOppEligibility] = useState("Open to all students");
+  const [oppLocation, setOppLocation] = useState("Delhi NCR / Pan-India");
+  const [oppMode, setOppMode] = useState<"Online" | "Offline" | "Hybrid">("Online");
+  const [oppApplyLink, setOppApplyLink] = useState("");
+  const [oppPrize, setOppPrize] = useState("");
+  const [oppTags, setOppTags] = useState("");
+  const [oppFeatured, setOppFeatured] = useState(false);
 
   // 2. Resource Form
   const [resCode, setResCode] = useState("");
@@ -147,6 +163,9 @@ export default function AdminPage() {
         const q = query(collection(db, "events"), orderBy("createdAt", "desc"), limit(50));
         const snap = await getDocs(q);
         setEventsList(snap.docs.map((d) => ({ id: d.id, ...d.data() } as EventDocument)));
+      } else if (activeTab === "opportunities") {
+        const opps = await getOpportunitiesFromFirestore();
+        setOpportunitiesList(opps);
       } else if (activeTab === "resources") {
         const q = query(collection(db, "resources"), orderBy("createdAt", "desc"), limit(50));
         const snap = await getDocs(q);
@@ -260,6 +279,73 @@ export default function AdminPage() {
     } catch (err: unknown) {
       const error = err as Error;
       toast({ title: "Publish Error", description: error.message || "Failed to publish event.", type: "error" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCreateOpportunity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oppTitle.trim() || !oppOrg.trim() || !oppApplyLink.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Opportunity Title, Host Organization, and Application Link are required.",
+        type: "error",
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const oppId = `opp_${Date.now()}`;
+      const newOpp: OpportunityDocument = {
+        id: oppId,
+        title: oppTitle.trim(),
+        organization: oppOrg.trim(),
+        category: oppCategory,
+        deadline: oppDeadline.trim() || "Rolling Admission",
+        eligibility: oppEligibility.trim() || "Open to all students",
+        location: oppLocation.trim() || "Delhi NCR / Pan-India",
+        mode: oppMode,
+        applyLink: oppApplyLink.trim(),
+        stipendOrPrize: oppPrize.trim() || undefined,
+        tags: oppTags.trim()
+          ? oppTags.split(",").map((t) => t.trim()).filter(Boolean)
+          : [oppCategory, oppMode],
+        featured: oppFeatured,
+        verifiedExternal: true,
+        status: "published",
+        publishedBy: user?.email || "Corporate Resource Centre",
+        publishedByUid: user?.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      await setDoc(doc(db, "opportunities", oppId), newOpp);
+      toast({
+        title: "Opportunity Published",
+        description: `"${oppTitle}" is now live on the collegiate opportunity portal.`,
+        type: "success",
+      });
+
+      // Reset form
+      setOppTitle("");
+      setOppOrg("");
+      setOppDeadline("");
+      setOppEligibility("Open to all students");
+      setOppLocation("Delhi NCR / Pan-India");
+      setOppApplyLink("");
+      setOppPrize("");
+      setOppTags("");
+      setOppFeatured(false);
+      setSubView("list");
+      loadTabData();
+    } catch (err: unknown) {
+      const error = err as Error;
+      toast({
+        title: "Publish Error",
+        description: error.message || "Failed to publish opportunity.",
+        type: "error",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -412,13 +498,25 @@ export default function AdminPage() {
   // ==========================================
   // Delete Item Handler
   // ==========================================
-  const handleDeleteItem = async (type: "event" | "resource" | "notice" | "gallery", id: string, storagePath?: string) => {
+  const handleDeleteItem = async (
+    type: "event" | "opportunity" | "resource" | "notice" | "gallery",
+    id: string,
+    storagePath?: string
+  ) => {
     const confirmed = window.confirm(`Are you sure you want to permanently delete this ${type}? This action cannot be undone.`);
     if (!confirmed) return;
 
     try {
       const collectionName =
-        type === "event" ? "events" : type === "resource" ? "resources" : type === "notice" ? "announcements" : "gallery";
+        type === "event"
+          ? "events"
+          : type === "opportunity"
+          ? "opportunities"
+          : type === "resource"
+          ? "resources"
+          : type === "notice"
+          ? "announcements"
+          : "gallery";
       await deleteDoc(doc(db, collectionName, id));
 
       if (storagePath) {
@@ -436,12 +534,20 @@ export default function AdminPage() {
   // ==========================================
   // Update Item Status (Publish / Archive)
   // ==========================================
-  const handleToggleStatus = async (type: "event" | "resource", id: string, currentStatus?: string) => {
+  const handleToggleStatus = async (
+    type: "event" | "opportunity" | "resource",
+    id: string,
+    currentStatus?: string
+  ) => {
     try {
       if (type === "event") {
         const nextStatus = currentStatus === "past" ? "upcoming" : "past";
         await updateDoc(doc(db, "events", id), { status: nextStatus, updatedAt: serverTimestamp() });
         toast({ title: "Event Status Updated", description: `Event status set to ${nextStatus}.`, type: "success" });
+      } else if (type === "opportunity") {
+        const nextStatus = currentStatus === "archived" ? "published" : "archived";
+        await updateDoc(doc(db, "opportunities", id), { status: nextStatus, updatedAt: serverTimestamp() });
+        toast({ title: "Opportunity Status Updated", description: `Opportunity is now ${nextStatus}.`, type: "success" });
       } else if (type === "resource") {
         const nextStatus = currentStatus === "archived" ? "published" : "archived";
         await updateDoc(doc(db, "resources", id), { status: nextStatus, updatedAt: serverTimestamp() });
@@ -636,6 +742,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-2">
             {[
               { id: "events", label: "Campus Events", icon: Calendar },
+              { id: "opportunities", label: "Opportunities", icon: Award },
               { id: "resources", label: "Academic Resources", icon: Upload },
               { id: "notices", label: "Campus Notices", icon: FileText },
               { id: "gallery", label: "Campus Gallery", icon: ImageIcon },
@@ -680,7 +787,17 @@ export default function AdminPage() {
                   subView === "list" ? "bg-white/15 text-white" : "text-slate-400 hover:text-white"
                 }`}
               >
-                Manage ({activeTab === "events" ? eventsList.length : activeTab === "resources" ? resourcesList.length : activeTab === "notices" ? noticesList.length : galleryList.length})
+                Manage (
+                  {activeTab === "events"
+                    ? eventsList.length
+                    : activeTab === "opportunities"
+                    ? opportunitiesList.length
+                    : activeTab === "resources"
+                    ? resourcesList.length
+                    : activeTab === "notices"
+                    ? noticesList.length
+                    : galleryList.length}
+                )
               </button>
             </div>
           )}
@@ -930,6 +1047,302 @@ export default function AdminPage() {
                               onClick={() => handleDeleteItem("event", e.id)}
                               className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 cursor-pointer"
                               title="Delete event"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 1B: OPPORTUNITIES */}
+        {/* ========================================================================= */}
+        {activeTab === "opportunities" && subView === "create" && (
+          <div className="max-w-3xl bg-slate-900/60 backdrop-blur-md rounded-3xl border border-white/10 p-6 sm:p-8 text-white space-y-6 shadow-xl">
+            <div className="border-b border-white/10 pb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Award className="w-5 h-5 text-blue-400" />
+                  <span>Publish Hackathon, Internship or Student Opportunity</span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Opportunity will be listed in the homepage spotlight and student opportunities feed.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleCreateOpportunity} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Opportunity Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={oppTitle}
+                  onChange={(e) => setOppTitle(e.target.value)}
+                  placeholder="e.g. Smart India Hackathon 2026 / Google Summer of Code"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Host Organization / Cell *</label>
+                  <input
+                    type="text"
+                    required
+                    value={oppOrg}
+                    onChange={(e) => setOppOrg(e.target.value)}
+                    placeholder="e.g. Ministry of Education / Microsoft / IEEE"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Category</label>
+                  <select
+                    value={oppCategory}
+                    onChange={(e) => setOppCategory(e.target.value as OpportunityCategory)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Hackathon" className="bg-slate-900">Hackathon</option>
+                    <option value="Internship" className="bg-slate-900">Internship</option>
+                    <option value="Competition" className="bg-slate-900">Competition</option>
+                    <option value="Scholarship" className="bg-slate-900">Scholarship</option>
+                    <option value="Workshop" className="bg-slate-900">Workshop</option>
+                    <option value="Student Programme" className="bg-slate-900">Student Programme</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Participation Mode</label>
+                  <select
+                    value={oppMode}
+                    onChange={(e) => setOppMode(e.target.value as "Online" | "Offline" | "Hybrid")}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Online" className="bg-slate-900">Online</option>
+                    <option value="Offline" className="bg-slate-900">Offline</option>
+                    <option value="Hybrid" className="bg-slate-900">Hybrid</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Application Deadline</label>
+                  <input
+                    type="text"
+                    value={oppDeadline}
+                    onChange={(e) => setOppDeadline(e.target.value)}
+                    placeholder="e.g. 15 March 2026"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Location / Venue</label>
+                  <input
+                    type="text"
+                    value={oppLocation}
+                    onChange={(e) => setOppLocation(e.target.value)}
+                    placeholder="e.g. Virtual / New Delhi"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Eligibility Criteria</label>
+                  <input
+                    type="text"
+                    value={oppEligibility}
+                    onChange={(e) => setOppEligibility(e.target.value)}
+                    placeholder="e.g. Open to 2nd, 3rd & 4th year B.Tech, BCA & MCA students"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Stipend / Prize Pool / Benefit</label>
+                  <input
+                    type="text"
+                    value={oppPrize}
+                    onChange={(e) => setOppPrize(e.target.value)}
+                    placeholder="e.g. ₹1,00,000 Cash Prize + PPI"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Official Application Link *</label>
+                <input
+                  type="url"
+                  required
+                  value={oppApplyLink}
+                  onChange={(e) => setOppApplyLink(e.target.value)}
+                  placeholder="https://sih.gov.in/ or official application portal"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Tags (Comma-separated)</label>
+                <input
+                  type="text"
+                  value={oppTags}
+                  onChange={(e) => setOppTags(e.target.value)}
+                  placeholder="e.g. AI, Full-Stack, Web3, Fellowship"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="oppFeatured"
+                  checked={oppFeatured}
+                  onChange={(e) => setOppFeatured(e.target.checked)}
+                  className="rounded bg-white/10 border-white/20 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <label htmlFor="oppFeatured" className="text-slate-300 font-medium cursor-pointer">
+                  Feature in Spotlight Card on Homepage
+                </label>
+              </div>
+
+              <div className="pt-2 flex items-center gap-3">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  disabled={isSubmitting}
+                  className="font-bold bg-blue-600 hover:bg-blue-500"
+                >
+                  <Award className="w-4 h-4 mr-1.5" />
+                  <span>{isSubmitting ? "Publishing..." : "Publish Opportunity"}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => {
+                    setPreviewItem({
+                      type: "opportunity",
+                      data: {
+                        title: oppTitle || "Opportunity Title Preview",
+                        organization: oppOrg || "Host Organization",
+                        category: oppCategory,
+                        deadline: oppDeadline || "Rolling",
+                        location: oppLocation || "Virtual",
+                        mode: oppMode,
+                        eligibility: oppEligibility || "Open to all students",
+                        stipendOrPrize: oppPrize || undefined,
+                      },
+                    });
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-1.5" />
+                  <span>Preview Card</span>
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 1B: LIST / MANAGE OPPORTUNITIES */}
+        {activeTab === "opportunities" && subView === "list" && (
+          <div className="bg-slate-900/60 backdrop-blur-md rounded-3xl border border-white/10 p-6 text-white space-y-4 shadow-xl">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+              <div>
+                <h2 className="text-lg font-bold text-white">Live Opportunities ({opportunitiesList.length})</h2>
+                <p className="text-xs text-slate-400">Manage hackathons, internships, and competitive programmes</p>
+              </div>
+              <div className="relative min-w-[200px]">
+                <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  value={filterQuery}
+                  onChange={(e) => setFilterQuery(e.target.value)}
+                  placeholder="Filter opportunities..."
+                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/10 border border-white/10 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {isLoadingData ? (
+              <div className="py-12 text-center text-xs text-slate-400">Loading opportunities from Firestore...</div>
+            ) : opportunitiesList.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400">
+                <Award className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                <p className="font-semibold text-white">No opportunities listed in Firestore yet.</p>
+                <p className="text-[11px] mt-1">Click &quot;+ New Item&quot; to publish a hackathon or internship.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="border-b border-white/10 text-slate-400 uppercase font-bold">
+                    <tr>
+                      <th className="py-2.5 px-3">Opportunity</th>
+                      <th className="py-2.5 px-3">Category / Mode</th>
+                      <th className="py-2.5 px-3">Deadline</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3">Apply Link</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 font-medium">
+                    {opportunitiesList
+                      .filter(
+                        (o) =>
+                          !filterQuery ||
+                          o.title.toLowerCase().includes(filterQuery.toLowerCase()) ||
+                          o.organization.toLowerCase().includes(filterQuery.toLowerCase())
+                      )
+                      .map((o) => (
+                        <tr key={o.id}>
+                          <td className="py-3 px-3">
+                            <span className="font-bold text-white block">{o.title}</span>
+                            <span className="text-[11px] text-blue-300">{o.organization}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="text-[10px] uppercase font-bold text-emerald-400 block">{o.category}</span>
+                            <span className="text-[10px] text-slate-400">{o.mode}</span>
+                          </td>
+                          <td className="py-3 px-3 text-slate-300">
+                            <span>{o.deadline}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <button
+                              onClick={() => handleToggleStatus("opportunity", o.id, o.status)}
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer ${
+                                o.status === "published"
+                                  ? "bg-emerald-500/20 text-emerald-300"
+                                  : "bg-slate-700 text-slate-300"
+                              }`}
+                              title="Click to toggle published/archived"
+                            >
+                              {o.status || "published"}
+                            </button>
+                          </td>
+                          <td className="py-3 px-3">
+                            <a
+                              href={o.applyLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-blue-400 hover:text-blue-300 flex items-center gap-1 font-mono text-[11px]"
+                            >
+                              <span>Apply</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            <button
+                              onClick={() => handleDeleteItem("opportunity", o.id)}
+                              className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 cursor-pointer"
+                              title="Delete opportunity"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1685,6 +2098,24 @@ export default function AdminPage() {
                   <h3 className="text-base font-bold text-white">{previewItem.data.title}</h3>
                   <p className="text-xs text-slate-400">{previewItem.data.date} • {previewItem.data.venue}</p>
                   <p className="text-xs text-slate-300 leading-relaxed">{previewItem.data.description}</p>
+                </div>
+              )}
+
+              {previewItem.type === "opportunity" && (
+                <div className="space-y-2.5 p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default" className="text-[10px] bg-blue-600">
+                      {previewItem.data.category}
+                    </Badge>
+                    <span className="text-[10px] text-emerald-400 font-mono font-bold">{previewItem.data.mode}</span>
+                  </div>
+                  <h3 className="text-sm font-bold text-white">{previewItem.data.title}</h3>
+                  <p className="text-xs text-blue-300 font-semibold">{previewItem.data.organization}</p>
+                  <p className="text-xs text-slate-400">Deadline: {previewItem.data.deadline} • {previewItem.data.location}</p>
+                  {previewItem.data.stipendOrPrize && (
+                    <p className="text-xs text-emerald-400 font-bold">{previewItem.data.stipendOrPrize}</p>
+                  )}
+                  <p className="text-xs text-slate-300">{previewItem.data.eligibility}</p>
                 </div>
               )}
 

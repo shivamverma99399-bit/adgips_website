@@ -133,5 +133,14 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // ========================================================
+    // 10. OPPORTUNITIES COLLECTION
+    // ========================================================
+    match /opportunities/{opportunityId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
+

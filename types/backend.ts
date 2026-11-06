@@ -1,4 +1,4 @@
-import { EventCategory, EventStatus, EventActivity, EventScheduleItem } from "./index";
+import { EventCategory, EventStatus, EventActivity, EventScheduleItem, OpportunityCategory } from "./index";
 
 export type UserRole = "student" | "society_member" | "moderator" | "admin";
 export type UserStatus = "active" | "suspended";
@@ -176,6 +176,27 @@ export interface ContactMessageDocument {
   message: string;
   status: "unread" | "reviewed" | "archived";
   createdAt: any;
+}
+
+export interface OpportunityDocument {
+  id: string;
+  title: string;
+  organization: string;
+  category: OpportunityCategory;
+  deadline: string;
+  eligibility: string;
+  location: string;
+  mode: "Online" | "Offline" | "Hybrid";
+  applyLink: string;
+  stipendOrPrize?: string;
+  tags: string[];
+  featured?: boolean;
+  verifiedExternal?: boolean;
+  status?: "published" | "archived" | "draft";
+  publishedBy?: string;
+  publishedByUid?: string | null;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface ApiResponse<T = any> {
