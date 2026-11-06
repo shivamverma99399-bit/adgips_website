@@ -437,6 +437,8 @@ export interface GalleryItemDocument {
   storagePath?: string;
   eventName?: string;
   date?: string;
+  location?: string;
+  tag?: string;
   publishedBy?: string;
   publishedByUid?: string | null;
   createdAt?: any;
@@ -444,9 +446,13 @@ export interface GalleryItemDocument {
 
 export async function getGalleryFromFirestore(): Promise<GalleryItemDocument[]> {
   try {
-    const q = query(collection(db, "gallery"), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as GalleryItemDocument[];
+    const snap = await getDocs(collection(db, "gallery"));
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as GalleryItemDocument[];
+    return items.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
   } catch (error) {
     console.error("Error fetching gallery items:", error);
     return [];

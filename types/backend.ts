@@ -201,6 +201,23 @@ export interface OpportunityDocument {
   updatedAt?: any;
 }
 
+export interface GalleryItemDocument {
+  id: string;
+  title: string;
+  category: string;
+  description?: string;
+  imageUrl: string;
+  storagePath?: string;
+  eventName?: string;
+  date?: string;
+  location?: string;
+  tag?: string;
+  publishedBy?: string;
+  publishedByUid?: string | null;
+  createdAt?: any;
+  updatedAt?: any;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;

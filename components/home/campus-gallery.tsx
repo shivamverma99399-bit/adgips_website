@@ -20,6 +20,7 @@ import { galleryData } from "@/data/gallery";
 import { SectionContainer } from "@/components/ui/section-container";
 import { Badge } from "@/components/ui/badge";
 import { GalleryItem } from "@/types";
+import { getGalleryFromFirestore } from "@/lib/firebase/firestore";
 import {
   cardHoverTransition,
   modalBackdropVariants,
@@ -31,6 +32,30 @@ import {
 
 export function CampusGallery() {
   const [activeItem, setActiveItem] = useState<GalleryItem | null>(null);
+  const [liveItems, setLiveItems] = useState<GalleryItem[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    getGalleryFromFirestore()
+      .then((items) => {
+        if (isMounted && items.length >= 6) {
+          const aspects: Array<"wide" | "square" | "tall"> = ["wide", "square", "tall", "wide", "square", "wide"];
+          const mapped: GalleryItem[] = items.slice(0, 6).map((item, idx) => ({
+            id: item.id,
+            title: item.title,
+            category: (item.category as any) || "Campus",
+            image: item.imageUrl,
+            description: item.description || item.title,
+            aspect: aspects[idx % 6],
+          }));
+          setLiveItems(mapped);
+        }
+      })
+      .catch((err) => console.error("Could not fetch live gallery items:", err));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeItem) return;
@@ -92,7 +117,7 @@ export function CampusGallery() {
     },
   ];
 
-  const displayItems = galleryData.length >= 6 ? galleryData : defaultFacilities;
+  const displayItems = liveItems.length >= 6 ? liveItems : (galleryData.length >= 6 ? galleryData : defaultFacilities);
   const libraryItem = displayItems[0];
   const computingItem = displayItems[1];
   const mootCourtItem = displayItems[2];
