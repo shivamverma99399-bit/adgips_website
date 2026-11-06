@@ -13,7 +13,7 @@ import {
 import { SectionContainer } from "@/components/ui/section-container";
 import { AnnouncementItemComponent } from "@/components/ui/announcement-item";
 import { Badge } from "@/components/ui/badge";
-import { getAnnouncementsFromFirestore } from "@/lib/firebase/firestore";
+import { getAnnouncementsFromSupabase } from "@/lib/supabase/queries";
 import { AnnouncementItem } from "@/types";
 import { sectionVariants, staggerContainer, staggerItem } from "@/lib/animations";
 
@@ -29,7 +29,7 @@ export function AnnouncementsSection() {
     async function fetchNotices() {
       try {
         setIsLoading(true);
-        const docs = await getAnnouncementsFromFirestore();
+        const docs = await getAnnouncementsFromSupabase();
         if (isMounted) {
           // Public visibility restricted to published notices
           const published: AnnouncementItem[] = docs

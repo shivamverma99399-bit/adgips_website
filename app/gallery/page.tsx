@@ -22,7 +22,8 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FolioFlowGallery } from "@/components/ui/folio-flow-gallery";
-import { getGalleryFromFirestore, GalleryItemDocument } from "@/lib/firebase/firestore";
+import { getGalleryFromSupabase } from "@/lib/supabase/queries";
+import type { GalleryItemDocument } from "@/types/backend";
 import type { JournalPage } from "@/data/folio-gallery";
 
 export default function GalleryPage() {
@@ -37,7 +38,7 @@ export default function GalleryPage() {
     async function loadGallery() {
       try {
         setIsLoading(true);
-        const data = await getGalleryFromFirestore();
+        const data = await getGalleryFromSupabase();
         if (isMounted) {
           setGalleryItems(data);
         }

@@ -9,7 +9,7 @@ import { SectionContainer } from "@/components/ui/section-container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getEventsFromFirestore } from "@/lib/firebase/firestore";
+import { getEventsFromSupabase } from "@/lib/supabase/queries";
 import { EventItem } from "@/types";
 import {
   sectionVariants,
@@ -27,7 +27,7 @@ export function EventsSection() {
     async function loadEvents() {
       try {
         setIsLoading(true);
-        const docs = await getEventsFromFirestore();
+        const docs = await getEventsFromSupabase();
         if (isMounted) {
           const mapped: EventItem[] = docs.map((d) => ({
             id: d.id,

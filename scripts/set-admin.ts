@@ -4,7 +4,8 @@
  *   FIREBASE_ADMIN_PROJECT_ID=adgips-website npx ts-node scripts/set-admin.ts <user-email-or-uid> <role>
  */
 
-import { adminAuth, adminDb } from "../lib/firebase/admin";
+import { adminAuth } from "../lib/firebase/admin";
+import { supabaseAdmin } from "../lib/supabase/server";
 
 async function setRole(identifier: string, role: "admin" | "student" | "society_member" | "moderator") {
   if (!identifier) {
@@ -23,14 +24,22 @@ async function setRole(identifier: string, role: "admin" | "student" | "society_
     // 1. Set Custom Claims for cryptographic token verification
     await adminAuth.setCustomUserClaims(userRecord.uid, { role });
 
-    // 2. Set Firestore role in trusted users collection
-    await adminDb.collection("users").doc(userRecord.uid).set(
+    // 2. Set Supabase PostgreSQL role in users table
+    const { error } = await supabaseAdmin.from("users").upsert(
       {
+        firebase_uid: userRecord.uid,
+        email: userRecord.email,
+        name: userRecord.displayName || "ADGIPS Admin",
         role,
-        updatedAt: new Date(),
+        status: "active",
+        updated_at: new Date().toISOString(),
       },
-      { merge: true }
+      { onConflict: "firebase_uid" }
     );
+
+    if (error) {
+      console.warn("⚠️ Warning updating Supabase user row:", error.message);
+    }
 
     console.log(`✅ Success: User ${userRecord.email} (${userRecord.uid}) has been granted role "${role}".`);
   } catch (err: unknown) {

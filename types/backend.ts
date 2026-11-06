@@ -1,7 +1,7 @@
 import { EventCategory, EventStatus, EventActivity, EventScheduleItem, OpportunityCategory } from "./index";
 
 export type UserRole = "student" | "society_member" | "moderator" | "admin";
-export type UserStatus = "active" | "suspended";
+export type UserStatus = "active" | "suspended" | "pending";
 
 export interface UserProfile {
   uid: string;
@@ -87,26 +87,32 @@ export interface RegistrationDocument {
   id: string; // deterministic: `${eventId}_${userId}`
   eventId: string;
   eventTitle: string;
-  eventCategory: string;
-  eventDate: string;
-  eventVenue: string;
+  eventCategory?: string;
+  eventDate?: string;
+  eventVenue?: string;
   userId: string;
   userEmail: string;
   studentName: string;
+  studentEmail?: string;
+  studentPhone?: string;
   enrollmentNo: string;
   semester?: string;
   branch?: string;
   status: "confirmed" | "waitlist" | "cancelled";
-  registeredAt: any;
+  registeredAt?: any;
+  createdAt?: any;
 }
 
 export interface AnnouncementDocument {
   id: string;
+  refCode?: string;
   title: string;
   category: "Academic" | "Examination" | "Placement" | "Events" | "Administrative";
+  authority?: string;
   date: string;
   expiryDate?: string;
   isUrgent?: boolean;
+  priority?: string;
   isDemo?: boolean;
   summary: string;
   details?: string;

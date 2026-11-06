@@ -20,7 +20,7 @@ import { galleryData } from "@/data/gallery";
 import { SectionContainer } from "@/components/ui/section-container";
 import { Badge } from "@/components/ui/badge";
 import { GalleryItem } from "@/types";
-import { getGalleryFromFirestore } from "@/lib/firebase/firestore";
+import { getGalleryFromSupabase } from "@/lib/supabase/queries";
 import {
   cardHoverTransition,
   modalBackdropVariants,
@@ -36,7 +36,7 @@ export function CampusGallery() {
 
   useEffect(() => {
     let isMounted = true;
-    getGalleryFromFirestore()
+    getGalleryFromSupabase()
       .then((items) => {
         if (isMounted && items.length >= 6) {
           const aspects: Array<"wide" | "square" | "tall"> = ["wide", "square", "tall", "wide", "square", "wide"];

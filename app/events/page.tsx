@@ -8,7 +8,7 @@ import { EventFeatured } from "@/components/events/event-featured";
 import { EventFilters } from "@/components/events/event-filters";
 import { EventGrid } from "@/components/events/event-grid";
 import { filterEvents, getEventStats } from "@/lib/event-utils";
-import { getEventsFromFirestore } from "@/lib/firebase/firestore";
+import { getEventsFromSupabase } from "@/lib/supabase/queries";
 import { EventItem } from "@/types";
 import { Loader2 } from "lucide-react";
 
@@ -24,7 +24,7 @@ export default function EventsPage() {
     async function fetchEvents() {
       try {
         setIsLoading(true);
-        const docs = await getEventsFromFirestore();
+        const docs = await getEventsFromSupabase();
         if (isMounted) {
           const normalized: EventItem[] = docs.map((d) => ({
             id: d.id,

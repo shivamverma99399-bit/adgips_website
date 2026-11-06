@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import {
-  getPublishedResourcesFromFirestore,
-  incrementResourceDownloadCount,
-} from "@/lib/firebase/firestore";
+  getPublishedResourcesFromSupabase,
+  incrementResourceDownloadCountInSupabase,
+} from "@/lib/supabase/queries";
 import type { AcademicResourceDocument } from "@/types/backend";
 import {
   sectionVariants,
@@ -32,7 +32,7 @@ export function LearnGrowSection() {
     let isMounted = true;
     async function loadResources() {
       try {
-        const data = await getPublishedResourcesFromFirestore();
+        const data = await getPublishedResourcesFromSupabase();
         if (isMounted) {
           setResources(data.slice(0, 4));
         }
@@ -60,7 +60,7 @@ export function LearnGrowSection() {
           item.id === res.id ? { ...item, downloadsCount: (item.downloadsCount || 0) + 1 } : item
         )
       );
-      incrementResourceDownloadCount(res.id).catch((err) =>
+      incrementResourceDownloadCountInSupabase(res.id).catch((err) =>
         console.error("Failed to increment download counter:", err)
       );
 

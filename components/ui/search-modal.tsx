@@ -13,11 +13,11 @@ import {
   Download,
 } from "lucide-react";
 import {
-  getEventsFromFirestore,
-  getOpportunitiesFromFirestore,
-  getAnnouncementsFromFirestore,
-  getResourcesFromFirestore,
-} from "@/lib/firebase/firestore";
+  getEventsFromSupabase,
+  getOpportunitiesFromSupabase,
+  getAnnouncementsFromSupabase,
+  getResourcesFromSupabase,
+} from "@/lib/supabase/queries";
 import { Badge } from "./badge";
 import { useToast } from "./toast";
 
@@ -46,10 +46,10 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     async function loadData() {
       try {
         const [evts, opps, notices, res] = await Promise.all([
-          getEventsFromFirestore(),
-          getOpportunitiesFromFirestore(),
-          getAnnouncementsFromFirestore(),
-          getResourcesFromFirestore(),
+          getEventsFromSupabase(),
+          getOpportunitiesFromSupabase(),
+          getAnnouncementsFromSupabase(),
+          getResourcesFromSupabase(),
         ]);
         if (isMounted) {
           setEventsList(evts);

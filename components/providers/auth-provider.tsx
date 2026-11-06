@@ -9,7 +9,7 @@ import {
   signOutUser,
   resetPasswordForEmail,
 } from "@/lib/firebase/auth";
-import { getUserProfile, createUserProfileIfNew } from "@/lib/firebase/firestore";
+import { getUserProfileFromSupabase } from "@/lib/supabase/queries";
 import { UserProfile } from "@/types/backend";
 
 interface AuthContextType {
@@ -57,17 +57,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         (tokenResult.claims as Record<string, unknown>).admin === true;
       setHasAdminClaim(isClaimAdmin);
 
-      // 2. Fetch or initialize profile
-      let p = await getUserProfile(firebaseUser.uid);
-      if (!p) {
-        p = await createUserProfileIfNew({
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-        });
+      // 2. Sync and retrieve user profile from Supabase PostgreSQL via server API
+      const token = await firebaseUser.getIdToken();
+      const res = await fetch("/api/auth/sync-user", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.user) {
+          setProfile(json.user);
+          return;
+        }
       }
-      setProfile(p);
+
+      // Fallback: direct Supabase query
+      const p = await getUserProfileFromSupabase(firebaseUser.uid);
+      if (p) {
+        setProfile(p);
+      }
     } catch (err) {
       console.error("Failed to load user profile or claims:", err);
     }

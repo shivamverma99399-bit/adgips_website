@@ -33,19 +33,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/components/providers/auth-provider";
-import { db } from "@/lib/firebase/client";
-import {
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-  query,
-  orderBy,
-  limit,
-} from "firebase/firestore";
 import { uploadFileToStorage, deleteFileFromStorage } from "@/lib/firebase/storage";
 import {
   EventDocument,
@@ -53,9 +40,31 @@ import {
   AnnouncementDocument,
   RegistrationDocument,
   OpportunityDocument,
+  GalleryItemDocument,
 } from "@/types/backend";
 import { EventCategory, OpportunityCategory } from "@/types";
-import { GalleryItemDocument, getOpportunitiesFromFirestore } from "@/lib/firebase/firestore";
+import {
+  getEventsFromSupabase,
+  createEventInSupabase,
+  updateEventInSupabase,
+  deleteEventInSupabase,
+  getOpportunitiesFromSupabase,
+  createOpportunityInSupabase,
+  updateOpportunityInSupabase,
+  deleteOpportunityInSupabase,
+  getResourcesFromSupabase,
+  createResourceInSupabase,
+  updateResourceInSupabase,
+  deleteResourceInSupabase,
+  getAnnouncementsFromSupabase,
+  createAnnouncementInSupabase,
+  updateAnnouncementInSupabase,
+  deleteAnnouncementInSupabase,
+  getGalleryFromSupabase,
+  createGalleryItemInSupabase,
+  deleteGalleryItemFromSupabase,
+  getRegistrationsFromSupabase,
+} from "@/lib/supabase/queries";
 
 type AdminTab = "events" | "opportunities" | "resources" | "notices" | "gallery" | "registrations";
 
@@ -162,31 +171,26 @@ export default function AdminPage() {
     setIsLoadingData(true);
     try {
       if (activeTab === "events") {
-        const q = query(collection(db, "events"), orderBy("createdAt", "desc"), limit(50));
-        const snap = await getDocs(q);
-        setEventsList(snap.docs.map((d) => ({ id: d.id, ...d.data() } as EventDocument)));
+        const events = await getEventsFromSupabase();
+        setEventsList(events);
       } else if (activeTab === "opportunities") {
-        const opps = await getOpportunitiesFromFirestore();
+        const opps = await getOpportunitiesFromSupabase();
         setOpportunitiesList(opps);
       } else if (activeTab === "resources") {
-        const q = query(collection(db, "resources"), orderBy("createdAt", "desc"), limit(50));
-        const snap = await getDocs(q);
-        setResourcesList(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AcademicResourceDocument)));
+        const resources = await getResourcesFromSupabase();
+        setResourcesList(resources);
       } else if (activeTab === "notices") {
-        const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(50));
-        const snap = await getDocs(q);
-        setNoticesList(snap.docs.map((d) => ({ id: d.id, ...d.data() } as AnnouncementDocument)));
+        const notices = await getAnnouncementsFromSupabase();
+        setNoticesList(notices);
       } else if (activeTab === "gallery") {
-        const q = query(collection(db, "gallery"), orderBy("createdAt", "desc"), limit(50));
-        const snap = await getDocs(q);
-        setGalleryList(snap.docs.map((d) => ({ id: d.id, ...d.data() } as GalleryItemDocument)));
+        const photos = await getGalleryFromSupabase();
+        setGalleryList(photos);
       } else if (activeTab === "registrations") {
-        const q = query(collection(db, "registrations"), limit(100));
-        const snap = await getDocs(q);
-        setRegistrations(snap.docs.map((d) => ({ id: d.id, ...d.data() } as RegistrationDocument)));
+        const regs = await getRegistrationsFromSupabase();
+        setRegistrations(regs);
       }
     } catch (err: unknown) {
-      console.error("Failed to load collection data from Firestore:", err);
+      console.error("Failed to load collection data from Supabase:", err);
     } finally {
       setIsLoadingData(false);
     }
@@ -241,10 +245,8 @@ export default function AdminPage() {
     }
     setIsSubmitting(true);
     try {
-      const eventId = `event_${Date.now()}`;
       const slug = eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-      const newEvent: EventDocument = {
-        id: eventId,
+      await createEventInSupabase({
         title: eventTitle.trim(),
         slug,
         category: eventCategory,
@@ -258,14 +260,8 @@ export default function AdminPage() {
         organizedBy: "ADGIPS Administration",
         registrationLink: eventRegistrationLink.trim() || undefined,
         tags: [eventCategory, "Campus"],
-        registeredCount: 0,
-        publishedBy: user?.email || "Administrator",
-        publishedByUid: user?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
+      }, { email: user?.email || undefined, uid: user?.uid });
 
-      await setDoc(doc(db, "events", eventId), newEvent);
       toast({ title: "Event Published", description: `"${eventTitle}" is now published on the collegiate calendar.`, type: "success" });
 
       // Reset form
@@ -298,9 +294,7 @@ export default function AdminPage() {
     }
     setIsSubmitting(true);
     try {
-      const oppId = `opp_${Date.now()}`;
-      const newOpp: OpportunityDocument = {
-        id: oppId,
+      await createOpportunityInSupabase({
         title: oppTitle.trim(),
         organization: oppOrg.trim(),
         category: oppCategory,
@@ -316,13 +310,8 @@ export default function AdminPage() {
         featured: oppFeatured,
         verifiedExternal: true,
         status: "published",
-        publishedBy: user?.email || "Corporate Resource Centre",
-        publishedByUid: user?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
+      }, { email: user?.email || undefined, uid: user?.uid });
 
-      await setDoc(doc(db, "opportunities", oppId), newOpp);
       toast({
         title: "Opportunity Published",
         description: `"${oppTitle}" is now live on the collegiate opportunity portal.`,
@@ -361,10 +350,8 @@ export default function AdminPage() {
     }
     setIsSubmitting(true);
     try {
-      const id = `res_${Date.now()}`;
       const semNum = parseInt(resSem.replace(/\D/g, "")) || 1;
-      const newRes: AcademicResourceDocument = {
-        id,
+      await createResourceInSupabase({
         code: resCode.trim().toUpperCase(),
         title: resTitle.trim(),
         stream: resStream,
@@ -379,14 +366,8 @@ export default function AdminPage() {
         storagePath: uploadedPath || undefined,
         description: resDescription.trim() || "Official academic syllabus and handouts repository item.",
         status: "published",
-        downloadsCount: 0,
-        publishedBy: user?.email || "Faculty Administrator",
-        publishedByUid: user?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
+      }, { email: user?.email || undefined, uid: user?.uid });
 
-      await setDoc(doc(db, "resources", id), newRes);
       toast({ title: "Resource Indexed", description: `${resCode} is now accessible in the Knowledge Commons.`, type: "success" });
 
       // Reset
@@ -414,28 +395,21 @@ export default function AdminPage() {
     }
     setIsSubmitting(true);
     try {
-      const noticeId = `notice_${Date.now()}`;
-      const newNotice: AnnouncementDocument = {
-        id: noticeId,
+      await createAnnouncementInSupabase({
+        refCode: `NOT-${Date.now().toString().slice(-4)}`,
         title: noticeTitle.trim(),
         category: noticeCategory,
+        authority: "Administrative Officer",
         date: noticeDate.trim(),
         expiryDate: noticeExpiryDate.trim() || undefined,
         summary: noticeSummary.trim(),
         details: noticeDetails.trim() || undefined,
-        isUrgent: isNoticeUrgent,
-        isDemo: false,
+        priority: isNoticeUrgent ? "High" : "Routine",
         fileUrl: uploadedUrl || noticeLink.trim() || undefined,
         storagePath: uploadedPath || undefined,
-        fileSize: uploadFile ? `${(uploadFile.size / 1024).toFixed(0)} KB` : undefined,
         status: "published",
-        publishedBy: user?.email || "Administrative Officer",
-        publishedByUid: user?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
+      }, { email: user?.email || undefined, uid: user?.uid });
 
-      await setDoc(doc(db, "announcements", noticeId), newNotice);
       toast({ title: "Circular Broadcasted", description: `Official notice published to the campus feed.`, type: "success" });
 
       // Reset
@@ -467,9 +441,7 @@ export default function AdminPage() {
     }
     setIsSubmitting(true);
     try {
-      const galId = `gal_${Date.now()}`;
-      const newGal: GalleryItemDocument = {
-        id: galId,
+      await createGalleryItemInSupabase({
         title: galTitle.trim(),
         category: galCategory,
         description: galDescription.trim() || undefined,
@@ -477,12 +449,9 @@ export default function AdminPage() {
         storagePath: uploadedPath || undefined,
         eventName: galEventName.trim() || undefined,
         date: galDate.trim() || new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
-        publishedBy: user?.email || "Media Cell",
-        publishedByUid: user?.uid,
-        createdAt: serverTimestamp(),
-      };
+        location: "ADGIPS Campus, New Delhi",
+      }, { email: user?.email || undefined, uid: user?.uid });
 
-      await setDoc(doc(db, "gallery", galId), newGal);
       toast({ title: "Gallery Photo Published", description: `Photo added to the institutional 3D gallery archive.`, type: "success" });
 
       // Reset
@@ -515,23 +484,23 @@ export default function AdminPage() {
     if (!confirmed) return;
 
     try {
-      const collectionName =
-        type === "event"
-          ? "events"
-          : type === "opportunity"
-          ? "opportunities"
-          : type === "resource"
-          ? "resources"
-          : type === "notice"
-          ? "announcements"
-          : "gallery";
-      await deleteDoc(doc(db, collectionName, id));
+      if (type === "event") {
+        await deleteEventInSupabase(id);
+      } else if (type === "opportunity") {
+        await deleteOpportunityInSupabase(id);
+      } else if (type === "resource") {
+        await deleteResourceInSupabase(id);
+      } else if (type === "notice") {
+        await deleteAnnouncementInSupabase(id);
+      } else if (type === "gallery") {
+        await deleteGalleryItemFromSupabase(id);
+      }
 
       if (storagePath) {
         await deleteFileFromStorage(storagePath);
       }
 
-      toast({ title: "Item Deleted", description: `The ${type} has been permanently removed from Firestore.`, type: "info" });
+      toast({ title: "Item Deleted", description: `The ${type} has been permanently removed.`, type: "info" });
       loadTabData();
     } catch (err: unknown) {
       const error = err as Error;
@@ -550,19 +519,19 @@ export default function AdminPage() {
     try {
       if (type === "event") {
         const nextStatus = currentStatus === "past" ? "upcoming" : "past";
-        await updateDoc(doc(db, "events", id), { status: nextStatus, updatedAt: serverTimestamp() });
+        await updateEventInSupabase(id, { status: nextStatus as any });
         toast({ title: "Event Status Updated", description: `Event status set to ${nextStatus}.`, type: "success" });
       } else if (type === "opportunity") {
         const nextStatus = currentStatus === "archived" ? "published" : "archived";
-        await updateDoc(doc(db, "opportunities", id), { status: nextStatus, updatedAt: serverTimestamp() });
+        await updateOpportunityInSupabase(id, { status: nextStatus as any });
         toast({ title: "Opportunity Status Updated", description: `Opportunity is now ${nextStatus}.`, type: "success" });
       } else if (type === "resource") {
         const nextStatus = currentStatus === "archived" ? "published" : "archived";
-        await updateDoc(doc(db, "resources", id), { status: nextStatus, updatedAt: serverTimestamp() });
+        await updateResourceInSupabase(id, { status: nextStatus as any });
         toast({ title: "Resource Status Updated", description: `Resource is now ${nextStatus}.`, type: "success" });
       } else if (type === "notice") {
         const nextStatus = currentStatus === "archived" ? "published" : "archived";
-        await updateDoc(doc(db, "announcements", id), { status: nextStatus, updatedAt: serverTimestamp() });
+        await updateAnnouncementInSupabase(id, { status: nextStatus as any });
         toast({ title: "Notice Status Updated", description: `Circular is now ${nextStatus}.`, type: "success" });
       }
       loadTabData();
@@ -2085,7 +2054,7 @@ export default function AdminPage() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
               <div>
                 <h2 className="text-lg font-bold text-white">Live Student Event Passes & Submissions ({registrations.length})</h2>
-                <p className="text-xs text-slate-400">Incoming real-time registrations stored in Cloud Firestore</p>
+                <p className="text-xs text-slate-400">Incoming real-time registrations stored in Supabase PostgreSQL</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={loadTabData} className="text-xs">
@@ -2099,7 +2068,7 @@ export default function AdminPage() {
             </div>
 
             {isLoadingData ? (
-              <div className="py-12 text-center text-xs text-slate-400">Loading registrations from Firestore...</div>
+              <div className="py-12 text-center text-xs text-slate-400">Loading registrations from Supabase...</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left">

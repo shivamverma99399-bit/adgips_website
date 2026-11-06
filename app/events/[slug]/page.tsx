@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/ui/event-card";
 import { EventActionButton } from "@/components/events/event-action-button";
 import { getNormalizedEventStatus, getRelatedEvents } from "@/lib/event-utils";
-import { getEventBySlugFromFirestore, getEventsFromFirestore } from "@/lib/firebase/firestore";
+import { getEventBySlugFromSupabase, getEventsFromSupabase } from "@/lib/supabase/queries";
 import { EventItem } from "@/types";
 
 interface EventDetailPageProps {
@@ -37,7 +37,7 @@ export async function generateMetadata({
   params,
 }: EventDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const eventDoc = await getEventBySlugFromFirestore(slug);
+  const eventDoc = await getEventBySlugFromSupabase(slug);
 
   if (!eventDoc) {
     return {
@@ -54,8 +54,8 @@ export async function generateMetadata({
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { slug } = await params;
   const [eventDoc, allDocs] = await Promise.all([
-    getEventBySlugFromFirestore(slug),
-    getEventsFromFirestore(),
+    getEventBySlugFromSupabase(slug),
+    getEventsFromSupabase(),
   ]);
 
   if (!eventDoc) {

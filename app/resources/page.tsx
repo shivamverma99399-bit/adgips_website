@@ -21,9 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import {
-  getPublishedResourcesFromFirestore,
-  incrementResourceDownloadCount,
-} from "@/lib/firebase/firestore";
+  getPublishedResourcesFromSupabase,
+  incrementResourceDownloadCountInSupabase,
+} from "@/lib/supabase/queries";
 import type { AcademicResourceDocument } from "@/types/backend";
 
 export default function ResourcesPage() {
@@ -41,7 +41,7 @@ export default function ResourcesPage() {
     async function loadResources() {
       try {
         setIsLoading(true);
-        const data = await getPublishedResourcesFromFirestore();
+        const data = await getPublishedResourcesFromSupabase();
         if (isMounted) {
           setResources(data);
         }
@@ -117,8 +117,8 @@ export default function ResourcesPage() {
         )
       );
 
-      // Persist atomic increment in Firestore
-      incrementResourceDownloadCount(res.id).catch((err) =>
+      // Persist atomic increment in Supabase
+      incrementResourceDownloadCountInSupabase(res.id).catch((err) =>
         console.error("Could not increment download counter:", err)
       );
 

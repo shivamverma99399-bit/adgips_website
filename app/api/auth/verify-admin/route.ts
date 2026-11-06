@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { adminAuth } from "@/lib/firebase/admin";
+import { supabaseAdmin } from "@/lib/supabase/server";
 
 /**
  * Server-Side Administrator Authorization Verification
- * Uses Firebase Admin SDK to cryptographically verify ID token and administrative claims.
+ * Uses Firebase Admin SDK to cryptographically verify ID token,
+ * then checks Supabase PostgreSQL users table for administrative role.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -30,16 +32,21 @@ export async function POST(req: NextRequest) {
     const hasAdminClaim =
       decoded.role === "admin" || (decoded as Record<string, unknown>).admin === true;
 
-    // 2. Check Firestore /users/{uid} document as secondary trusted server authority
-    let hasAdminDoc = false;
+    // 2. Check Supabase PostgreSQL `users` table as trusted server authority
+    let hasAdminSupabase = false;
     if (!hasAdminClaim) {
-      const userSnap = await adminDb.collection("users").doc(decoded.uid).get();
-      if (userSnap.exists && userSnap.data()?.role === "admin") {
-        hasAdminDoc = true;
+      const { data: userRow } = await supabaseAdmin
+        .from("users")
+        .select("role")
+        .eq("firebase_uid", decoded.uid)
+        .maybeSingle();
+
+      if (userRow?.role === "admin") {
+        hasAdminSupabase = true;
       }
     }
 
-    const isAuthorizedAdmin = hasAdminClaim || hasAdminDoc;
+    const isAuthorizedAdmin = hasAdminClaim || hasAdminSupabase;
 
     if (!isAuthorizedAdmin) {
       return NextResponse.json(

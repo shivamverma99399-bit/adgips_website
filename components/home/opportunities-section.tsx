@@ -8,7 +8,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
-import { getOpportunitiesFromFirestore } from "@/lib/firebase/firestore";
+import { getOpportunitiesFromSupabase } from "@/lib/supabase/queries";
 import { OpportunityItem } from "@/types";
 import {
   sectionVariants,
@@ -29,7 +29,7 @@ export function OpportunitiesSection() {
     async function loadOpportunities() {
       try {
         setIsLoading(true);
-        const docs = await getOpportunitiesFromFirestore();
+        const docs = await getOpportunitiesFromSupabase();
         if (isMounted) {
           const mapped: OpportunityItem[] = docs
             .filter((d) => d.status !== "draft" && d.status !== "archived")
