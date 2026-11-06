@@ -11,8 +11,6 @@ import {
   User,
 } from "firebase/auth";
 import { auth } from "./client";
-import { createUserProfileIfNew, getUserProfile } from "./firestore";
-import { UserProfile } from "@/types/backend";
 
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
@@ -28,20 +26,12 @@ if (typeof window !== "undefined") {
 
 /**
  * Sign in with Google (OAuth popup with redirect fallback)
+ * Exclusively handles identity; profile sync is handled via Supabase PostgreSQL.
  */
-export async function signInWithGoogle(): Promise<{
-  user: User;
-  profile: UserProfile;
-}> {
+export async function signInWithGoogle(): Promise<{ user: User }> {
   try {
     const cred = await signInWithPopup(auth, googleProvider);
-    const profile = await createUserProfileIfNew({
-      uid: cred.user.uid,
-      email: cred.user.email,
-      displayName: cred.user.displayName,
-      photoURL: cred.user.photoURL,
-    });
-    return { user: cred.user, profile };
+    return { user: cred.user };
   } catch (error: unknown) {
     const err = error as { code?: string };
     if (
@@ -62,18 +52,9 @@ export async function signInWithGoogle(): Promise<{
 export async function loginWithEmailAndPassword(
   email: string,
   pass: string
-): Promise<{ user: User; profile: UserProfile }> {
+): Promise<{ user: User }> {
   const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
-  let profile = await getUserProfile(cred.user.uid);
-  if (!profile) {
-    profile = await createUserProfileIfNew({
-      uid: cred.user.uid,
-      email: cred.user.email,
-      displayName: cred.user.displayName,
-      photoURL: cred.user.photoURL,
-    });
-  }
-  return { user: cred.user, profile };
+  return { user: cred.user };
 }
 
 /**
@@ -81,17 +62,10 @@ export async function loginWithEmailAndPassword(
  */
 export async function signUpWithEmailAndPassword(
   email: string,
-  pass: string,
-  name?: string
-): Promise<{ user: User; profile: UserProfile }> {
+  pass: string
+): Promise<{ user: User }> {
   const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
-  const profile = await createUserProfileIfNew({
-    uid: cred.user.uid,
-    email: cred.user.email,
-    displayName: name || cred.user.displayName,
-    photoURL: cred.user.photoURL,
-  });
-  return { user: cred.user, profile };
+  return { user: cred.user };
 }
 
 /**

@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       const { data: userRow } = await supabaseAdmin
         .from("users")
         .select("role")
-        .eq("firebase_uid", decoded.uid)
+        .or(`firebase_uid.eq.${decoded.uid},email.eq.${decoded.email?.toLowerCase()}`)
         .maybeSingle();
 
       if (userRow?.role === "admin") {

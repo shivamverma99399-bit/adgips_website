@@ -32,12 +32,30 @@ export async function POST(req: NextRequest) {
     const name = decoded.name || email.split("@")[0] || "ADGIPS Scholar";
     const photoUrl = decoded.picture || null;
 
-    // 2. Query Supabase users table
-    const { data: existingUser, error: queryError } = await supabaseAdmin
+    // 2. Query Supabase users table by firebase_uid or email
+    let { data: existingUser, error: queryError } = await supabaseAdmin
       .from("users")
       .select("*")
       .eq("firebase_uid", firebaseUid)
       .maybeSingle();
+
+    if (!existingUser && email) {
+      const { data: userByEmail } = await supabaseAdmin
+        .from("users")
+        .select("*")
+        .eq("email", email.toLowerCase())
+        .maybeSingle();
+
+      if (userByEmail) {
+        existingUser = userByEmail;
+        if (userByEmail.firebase_uid !== firebaseUid) {
+          await supabaseAdmin
+            .from("users")
+            .update({ firebase_uid: firebaseUid, photo_url: photoUrl, updated_at: new Date().toISOString() })
+            .eq("id", userByEmail.id);
+        }
+      }
+    }
 
     if (queryError) {
       console.error("Supabase query error:", queryError);

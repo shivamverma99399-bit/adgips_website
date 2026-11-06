@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     const { data: userProfile, error: userError } = await supabaseAdmin
       .from("users")
       .select("role, status, email")
-      .eq("firebase_uid", firebaseUid)
+      .or(`firebase_uid.eq.${firebaseUid},email.eq.${decoded.email?.toLowerCase()}`)
       .maybeSingle();
 
     if (userError || !userProfile) {
