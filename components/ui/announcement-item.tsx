@@ -25,11 +25,20 @@ export function AnnouncementItemComponent({
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toast({
-      title: "Notice Document",
-      description: `Downloading official circular (${announcement.fileSize || "PDF"}).`,
-      type: "info",
-    });
+    if (announcement.fileUrl) {
+      window.open(announcement.fileUrl, "_blank", "noopener,noreferrer");
+      toast({
+        title: "Official Circular",
+        description: `Opening signed institutional document (${announcement.fileSize || "PDF"}).`,
+        type: "success",
+      });
+    } else {
+      toast({
+        title: "Official Circular Bulletin",
+        description: `This circular was issued as an official text directive without an attached PDF file.`,
+        type: "info",
+      });
+    }
   };
 
   // Parse date into Day and Month for clean editorial presentation
@@ -96,16 +105,18 @@ export function AnnouncementItemComponent({
               {announcement.fileSize}
             </span>
           )}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleDownload}
-            aria-label="Download circular"
-            title="Download circular document"
-            className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
-          >
-            <Download className="w-4 h-4" />
-          </motion.button>
+          {announcement.fileUrl && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleDownload}
+              aria-label="Download circular"
+              title="Download circular document"
+              className="p-2.5 rounded-xl text-blue-400 hover:text-white hover:bg-white/10 border border-white/10 transition-all cursor-pointer"
+            >
+              <Download className="w-4 h-4" />
+            </motion.button>
+          )}
           <div className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/10 text-xs font-bold text-white group-hover:bg-blue-600 group-hover:text-white transition-colors">
             <span>Read</span>
             <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -182,15 +193,17 @@ export function AnnouncementItemComponent({
                   >
                     Close
                   </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={handleDownload}
-                    className="flex-1 sm:flex-initial"
-                  >
-                    <Download className="w-4 h-4 mr-1.5" />
-                    Download Circular ({announcement.fileSize || "PDF"})
-                  </Button>
+                  {announcement.fileUrl && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleDownload}
+                      className="flex-1 sm:flex-initial font-bold"
+                    >
+                      <Download className="w-4 h-4 mr-1.5" />
+                      Download Circular ({announcement.fileSize || "PDF"})
+                    </Button>
+                  )}
                 </div>
               </div>
             </motion.div>

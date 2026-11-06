@@ -258,13 +258,22 @@ export async function registerForEventInFirestore(
 
 export async function getAnnouncementsFromFirestore(): Promise<AnnouncementDocument[]> {
   try {
-    const q = query(collection(db, "announcements"), orderBy("createdAt", "desc"));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as AnnouncementDocument[];
+    const snap = await getDocs(collection(db, "announcements"));
+    const notices = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as AnnouncementDocument[];
+    return notices.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      return timeB - timeA;
+    });
   } catch (error) {
     console.error("Error fetching announcements:", error);
     return [];
   }
+}
+
+export async function getPublishedAnnouncementsFromFirestore(): Promise<AnnouncementDocument[]> {
+  const all = await getAnnouncementsFromFirestore();
+  return all.filter((a) => a.status !== "archived" && a.status !== "draft");
 }
 
 // ==========================================
@@ -383,6 +392,7 @@ export async function createAnnouncementInFirestore(
   await setDoc(noticeRef, {
     ...announcement,
     id: noticeId,
+    status: announcement.status || "published",
     publishedBy: adminInfo?.email || "Administrator",
     publishedByUid: adminInfo?.uid || null,
     createdAt: serverTimestamp(),

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Bell,
@@ -8,19 +8,64 @@ import {
   ShieldCheck,
   Filter,
   Calendar,
+  Loader2,
 } from "lucide-react";
-import { announcementsData } from "@/data/announcements";
 import { SectionContainer } from "@/components/ui/section-container";
 import { AnnouncementItemComponent } from "@/components/ui/announcement-item";
 import { Badge } from "@/components/ui/badge";
+import { getAnnouncementsFromFirestore } from "@/lib/firebase/firestore";
+import { AnnouncementItem } from "@/types";
 import { sectionVariants, staggerContainer, staggerItem } from "@/lib/animations";
 
 export function AnnouncementsSection() {
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("All");
 
-  const categories = ["All", "Events", "Examination", "Placement", "Academic"];
+  const categories = ["All", "Events", "Examination", "Placement", "Academic", "Administrative"];
 
-  const filteredAnnouncements = announcementsData.filter((item) => {
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchNotices() {
+      try {
+        setIsLoading(true);
+        const docs = await getAnnouncementsFromFirestore();
+        if (isMounted) {
+          // Public visibility restricted to published notices
+          const published: AnnouncementItem[] = docs
+            .filter((d) => d.status !== "archived" && d.status !== "draft")
+            .map((d) => ({
+              id: d.id,
+              title: d.title,
+              category: d.category,
+              date: d.date,
+              expiryDate: d.expiryDate,
+              isUrgent: d.isUrgent,
+              isDemo: false,
+              summary: d.summary,
+              details: d.details,
+              fileSize: d.fileSize,
+              fileUrl: d.fileUrl,
+              storagePath: d.storagePath,
+              status: d.status || "published",
+              publishedBy: d.publishedBy,
+            }));
+          setAnnouncements(published);
+        }
+      } catch (err) {
+        console.error("Failed to load announcements from Firestore:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+
+    fetchNotices();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredAnnouncements = announcements.filter((item) => {
     if (activeTab === "All") return true;
     return item.category === activeTab;
   });
@@ -62,8 +107,8 @@ export function AnnouncementsSection() {
                 {categories.map((cat) => {
                   const count =
                     cat === "All"
-                      ? announcementsData.length
-                      : announcementsData.filter((a) => a.category === cat).length;
+                      ? announcements.length
+                      : announcements.filter((a) => a.category === cat).length;
                   const isActive = activeTab === cat;
                   return (
                     <motion.button
@@ -83,7 +128,7 @@ export function AnnouncementsSection() {
                           isActive ? "bg-white/20 text-white" : "bg-white/10 text-slate-400"
                         }`}
                       >
-                        {count}
+                        {isLoading ? "—" : count}
                       </span>
                     </motion.button>
                   );
@@ -125,7 +170,7 @@ export function AnnouncementsSection() {
             <div className="flex items-center justify-between pb-2">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
                 <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                <span>Active Notices ({filteredAnnouncements.length})</span>
+                <span>Active Notices ({isLoading ? "—" : filteredAnnouncements.length})</span>
               </div>
               <Badge variant="outline" className="text-[10px]">
                 Official Feed
@@ -133,7 +178,12 @@ export function AnnouncementsSection() {
             </div>
 
             {/* Notice Items with Stagger Animation or Empty State */}
-            {filteredAnnouncements.length === 0 ? (
+            {isLoading ? (
+              <div className="p-12 text-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-xs">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-400" />
+                <p>Loading collegiate circulars...</p>
+              </div>
+            ) : filteredAnnouncements.length === 0 ? (
               <div className="p-8 text-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-xs">
                 <Bell className="w-6 h-6 mx-auto mb-2 text-slate-500" />
                 <p className="font-semibold text-slate-300">No official circulars published at this time.</p>

@@ -120,11 +120,16 @@ export interface AnnouncementItem {
   title: string;
   category: 'Academic' | 'Examination' | 'Placement' | 'Events' | 'Administrative';
   date: string;
+  expiryDate?: string;
   isUrgent?: boolean;
-  isDemo: boolean;
+  isDemo?: boolean;
   summary: string;
   details?: string;
   fileSize?: string;
+  fileUrl?: string;
+  storagePath?: string;
+  status?: "published" | "archived" | "draft";
+  publishedBy?: string;
 }
 
 export interface GalleryItem {

@@ -105,6 +105,7 @@ export interface AnnouncementDocument {
   title: string;
   category: "Academic" | "Examination" | "Placement" | "Events" | "Administrative";
   date: string;
+  expiryDate?: string;
   isUrgent?: boolean;
   isDemo?: boolean;
   summary: string;
@@ -112,6 +113,7 @@ export interface AnnouncementDocument {
   fileSize?: string;
   fileUrl?: string;
   storagePath?: string;
+  status?: "published" | "archived" | "draft";
   publishedBy?: string;
   publishedByUid?: string | null;
   createdAt?: any;
