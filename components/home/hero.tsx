@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Calendar,
   Sparkles,
+  BookOpen,
   GraduationCap,
   ChevronDown,
 } from "lucide-react";
@@ -122,11 +123,11 @@ export function Hero() {
               <Button
                 variant="outline"
                 size="lg"
-                href="/dashboard"
+                href="/resources"
                 className="font-semibold text-slate-200 hover:text-white"
               >
-                <GraduationCap className="w-4 h-4 mr-2 text-emerald-400" />
-                <span>Student Experience Portal</span>
+                <BookOpen className="w-4 h-4 mr-2 text-emerald-400" />
+                <span>Knowledge Commons & PYQs</span>
               </Button>
             </motion.div>
           </div>

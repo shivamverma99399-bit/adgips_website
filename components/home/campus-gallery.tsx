@@ -41,13 +41,64 @@ export function CampusGallery() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeItem]);
 
-  // Key campus visual items from official gallery dataset
-  const libraryItem = galleryData.find((g) => g.id === "gal-03") || galleryData[2];
-  const computingItem = galleryData.find((g) => g.id === "gal-02") || galleryData[1];
-  const mootCourtItem = galleryData.find((g) => g.id === "gal-04") || galleryData[3];
-  const culturalItem = galleryData.find((g) => g.id === "gal-05") || galleryData[4];
-  const sportsItem = galleryData.find((g) => g.id === "gal-06") || galleryData[5];
-  const hackathonItem = galleryData.find((g) => g.id === "gal-08") || galleryData[7];
+  const defaultFacilities: GalleryItem[] = [
+    {
+      id: "fac-library",
+      title: "Central Digital Library & IEEE Resource Wing",
+      category: "Academic",
+      image: "/images/campus-life.jpg",
+      description: "85,000+ volumes, IEEE Xplore digital access, quiet research cubicles, and institutional journals.",
+      aspect: "wide",
+    },
+    {
+      id: "fac-computing",
+      title: "High-Performance Computing & AI Laboratories",
+      category: "Technical",
+      image: "/images/engineering.jpg",
+      description: "Gigabit-speed computing bays equipped with AI research workstations, robotics kits, and cloud infrastructure.",
+      aspect: "square",
+    },
+    {
+      id: "fac-moot",
+      title: "Moot Court Hall & Trial Advocacy Chambers",
+      category: "Academic",
+      image: "/images/law-moot-court.jpg",
+      description: "Full-scale simulated courtroom designed for appellate advocacy, judicial benchmarking, and legal aid clinics.",
+      aspect: "tall",
+    },
+    {
+      id: "fac-oat",
+      title: "Open Air Theatre (OAT) & Cultural Arena",
+      category: "Cultural",
+      image: "/images/cultural-fest.jpg",
+      description: "The vibrant stage for Utkarsh cultural fest, battle of the bands, nukkad natak, and student expressions.",
+      aspect: "wide",
+    },
+    {
+      id: "fac-sports",
+      title: "Collegiate Sports Arena & Athletic Grounds",
+      category: "Sports",
+      image: "/images/campus-main.png",
+      description: "Outdoor football, cricket, volleyball, and indoor badminton arenas promoting fitness and collegiate sportsmanship.",
+      aspect: "square",
+    },
+    {
+      id: "fac-innovation",
+      title: "Innovation Cell & Hackathon Arena",
+      category: "Technical",
+      image: "/images/hackathon.jpg",
+      description: "24-hour sprint spaces hosting Smart India Hackathons, developer bootcamps, and venture incubator pitch desks.",
+      aspect: "wide",
+    },
+  ];
+
+  const displayItems = galleryData.length >= 6 ? galleryData : defaultFacilities;
+  const libraryItem = displayItems[0];
+  const computingItem = displayItems[1];
+  const mootCourtItem = displayItems[2];
+  const culturalItem = displayItems[3];
+  const sportsItem = displayItems[4];
+  const hackathonItem = displayItems[5];
 
   return (
     <section id="gallery" className="py-20 sm:py-28 bg-transparent border-b border-white/10">

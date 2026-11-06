@@ -59,11 +59,11 @@ export function JourneyCTASection() {
               <Button
                 variant="primary"
                 size="lg"
-                href="/dashboard"
+                href="/resources"
                 className="shadow-xl shadow-blue-600/30 font-bold group"
               >
-                <GraduationCap className="w-4 h-4 mr-2" />
-                <span>Student Experience Portal</span>
+                <BookOpen className="w-4 h-4 mr-2" />
+                <span>Knowledge Commons & PYQs</span>
                 <ArrowRight className="w-4 h-4 ml-1.5 transition-transform group-hover:translate-x-1" />
               </Button>
 

@@ -42,10 +42,11 @@ export async function signInWithGoogle(): Promise<{
       photoURL: cred.user.photoURL,
     });
     return { user: cred.user, profile };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { code?: string };
     if (
-      error.code === "auth/popup-blocked" ||
-      error.code === "auth/popup-closed-by-user"
+      err.code === "auth/popup-blocked" ||
+      err.code === "auth/popup-closed-by-user"
     ) {
       // Fallback to redirect if popup is blocked
       await signInWithRedirect(auth, googleProvider);

@@ -11,19 +11,19 @@ import {
   Search,
   CheckCircle2,
   X,
-  UserCheck,
-  Send,
   Users,
   Compass,
+  Info,
+  Calendar,
+  MapPin,
+  Mail,
 } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { getStoredSession, DEFAULT_STUDENT, applyStudentForClub } from "@/lib/auth";
 import { useAuth } from "@/components/providers/auth-provider";
-import { applyForSocietyInFirestore } from "@/lib/firebase/firestore";
 
 interface ClubItem {
   id: string;
@@ -115,11 +115,7 @@ const clubsData: ClubItem[] = [
 export default function ActivitiesPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedClubForApply, setSelectedClubForApply] = useState<ClubItem | null>(null);
-  const [preferredRole, setPreferredRole] = useState("General Member");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const { user, profile, refreshProfile } = useAuth();
+  const [selectedClubForInfo, setSelectedClubForInfo] = useState<ClubItem | null>(null);
 
   const categories = ["All", "Technical", "Legal", "Cultural", "Sports", "Management"];
 
@@ -137,66 +133,6 @@ export default function ActivitiesPage() {
       return matchCat && matchQuery;
     });
   }, [selectedCategory, searchQuery]);
-
-  const handleApplySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedClubForApply) return;
-    setIsSubmitting(true);
-
-    try {
-      if (user) {
-        const res = await applyForSocietyInFirestore(
-          {
-            id: selectedClubForApply.id,
-            name: selectedClubForApply.name,
-            category: selectedClubForApply.category,
-          },
-          {
-            uid: user.uid,
-            email: user.email || "",
-            name: profile?.name || user.displayName || "Student Scholar",
-            enrollmentNo: profile?.enrollmentNo,
-          },
-          preferredRole
-        );
-
-        if (!res.success) {
-          toast({
-            title: "Application Notice",
-            description: res.message,
-            type: "info",
-          });
-          setIsSubmitting(false);
-          return;
-        }
-
-        await refreshProfile();
-      }
-
-      applyStudentForClub(
-        selectedClubForApply.name,
-        selectedClubForApply.category,
-        preferredRole
-      );
-
-      const appliedClub = selectedClubForApply;
-      setSelectedClubForApply(null);
-
-      toast({
-        title: "Application Submitted!",
-        description: `Your membership application for ${appliedClub.name} (${preferredRole}) has been forwarded to the Executive Committee.`,
-        type: "success",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Application Error",
-        description: err.message || "Failed to submit application.",
-        type: "error",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div className="flex-1 bg-transparent pt-2 pb-12">
@@ -302,10 +238,10 @@ export default function ActivitiesPage() {
                     {club.members}
                   </span>
                   <button
-                    onClick={() => setSelectedClubForApply(club)}
+                    onClick={() => setSelectedClubForInfo(club)}
                     className="font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-blue-500/20 cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>Apply to Join</span>
+                    <span>Society Details</span>
                     <span>&rarr;</span>
                   </button>
                 </div>
@@ -331,91 +267,87 @@ export default function ActivitiesPage() {
               Want to start a new club or join executive committees?
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Registrations for student society office-bearers open each academic semester under the Student Activity Council (SAC), Shastri Park campus.
+              Inductions and executive appointments take place each academic semester under the Student Activity Council (SAC), Shastri Park campus.
             </p>
           </div>
-          <Button variant="white" size="md" href="/dashboard">
-            View My Society Memberships
+          <Button variant="white" size="md" href="mailto:info@adgips.ac.in" className="shrink-0 font-bold">
+            Contact Student Activity Council &rarr;
           </Button>
         </div>
 
-        {/* Membership Application Modal */}
-        {selectedClubForApply && (
+        {/* Society Details & Induction Modal */}
+        {selectedClubForInfo && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-            <div className="relative w-full max-w-md bg-[#071126]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/15 overflow-hidden text-white">
+            <div className="relative w-full max-w-lg bg-[#071126]/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/15 overflow-hidden text-white">
               <div className="p-6 border-b border-white/10 flex items-start justify-between">
                 <div>
                   <Badge variant="navy" className="text-xs mb-1">
-                    {selectedClubForApply.category}
+                    {selectedClubForInfo.category} • {selectedClubForInfo.badge}
                   </Badge>
                   <h3 className="text-lg font-bold text-white">
-                    Apply to {selectedClubForApply.name}
+                    {selectedClubForInfo.name}
                   </h3>
                 </div>
                 <button
-                  onClick={() => setSelectedClubForApply(null)}
+                  onClick={() => setSelectedClubForInfo(null)}
                   className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/10"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleApplySubmit} className="p-6 space-y-4 text-xs">
+              <div className="p-6 space-y-4 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">
-                    Desired Membership Role
-                  </label>
-                  <select
-                    value={preferredRole}
-                    onChange={(e) => setPreferredRole(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="General Member" className="bg-slate-900">
-                      General Member (Events & Workshops)
-                    </option>
-                    <option value="Technical Lead" className="bg-slate-900">
-                      Technical / Project Lead
-                    </option>
-                    <option value="Core Execom Member" className="bg-slate-900">
-                      Core Executive Committee (Execom)
-                    </option>
-                    <option value="Event Volunteer" className="bg-slate-900">
-                      Student Event Coordinator / Volunteer
-                    </option>
-                  </select>
+                  <h4 className="font-semibold text-slate-300 mb-1">Faculty & Department Supervision</h4>
+                  <p className="text-slate-400 leading-relaxed">{selectedClubForInfo.leads}</p>
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-300 mb-1">
-                    Why do you want to join this society?
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Briefly describe your interest or relevant experience..."
-                    defaultValue="Passionate about contributing to campus technical events and collaborating with peers."
-                    className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/10 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <h4 className="font-semibold text-slate-300 mb-1">Overview & Objectives</h4>
+                  <p className="text-slate-300 leading-relaxed">{selectedClubForInfo.description}</p>
                 </div>
 
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    disabled={isSubmitting}
-                    className="w-full justify-center font-bold"
-                  >
-                    {isSubmitting ? (
-                      <span>Submitting Application...</span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Send className="w-4 h-4" />
-                        <span>Submit Society Application</span>
+                <div>
+                  <h4 className="font-semibold text-slate-300 mb-1.5">Flagship Activities & Initiatives</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedClubForInfo.activities.map((act) => (
+                      <span
+                        key={act}
+                        className="text-[11px] font-medium text-emerald-300 bg-emerald-500/10 border border-emerald-400/20 px-2.5 py-1 rounded-lg"
+                      >
+                        {act}
                       </span>
-                    )}
+                    ))}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-blue-400 font-semibold">
+                    <Info className="w-4 h-4" />
+                    <span>Cohort Induction & Membership</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Induction orientations, team registrations, and executive committee elections are held at the beginning of each semester. Visit the respective department office or email the Student Activity Council.
+                  </p>
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedClubForInfo(null)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    href={`mailto:info@adgips.ac.in?subject=Inquiry regarding ${encodeURIComponent(selectedClubForInfo.name)}`}
+                  >
+                    Email Council Desk
                   </Button>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
         )}

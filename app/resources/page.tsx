@@ -19,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { getResources, AcademicResource } from "@/data/resources";
-import { downloadAcademicResource } from "@/lib/download-resource";
 
 export default function ResourcesPage() {
   const [resources, setResources] = useState<AcademicResource[]>([]);
@@ -64,11 +63,14 @@ export default function ResourcesPage() {
   }, [resources, selectedStream, selectedType, selectedSemester, searchQuery]);
 
   const handleDownload = (res: AcademicResource) => {
-    downloadAcademicResource(res);
+    if (res.fileUrl && (res.fileUrl.startsWith("http://") || res.fileUrl.startsWith("https://") || res.fileUrl.startsWith("/"))) {
+      window.open(res.fileUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
     toast({
-      title: "File Download Initialized",
-      description: `Downloaded ${res.code} — ${res.title}. Saved to your Student Dashboard.`,
-      type: "success",
+      title: "Document Repository Link",
+      description: `Official document repository link for ${res.code} will be available once uploaded to the server repository.`,
+      type: "info",
     });
   };
 
@@ -110,8 +112,14 @@ export default function ResourcesPage() {
               </p>
             </div>
           </div>
-          <Button variant="white" size="md" href="/dashboard" className="shrink-0 font-bold">
-            Open Student E-Library
+          <Button
+            variant="white"
+            size="md"
+            href="https://adgips.ac.in"
+            external
+            className="shrink-0 font-bold"
+          >
+            Access Institutional Portal &rarr;
           </Button>
         </div>
 

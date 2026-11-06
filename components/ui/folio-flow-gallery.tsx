@@ -23,7 +23,24 @@ interface FolioFlowGalleryProps {
   autoPlayInterval?: number;
 }
 
-export function FolioFlowGallery({
+export function FolioFlowGallery(props: FolioFlowGalleryProps) {
+  const pages = props.pages || folioJournalPages;
+  if (!pages || pages.length === 0) {
+    return (
+      <div className="p-12 sm:p-16 text-center rounded-3xl bg-slate-900/60 border border-white/10 backdrop-blur-md">
+        <BookOpen className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-white mb-1">Campus Photo Journal Empty</h3>
+        <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+          Curated institutional memories, fest highlights, and student achievements will appear in this 3D folio once published by the administration.
+        </p>
+      </div>
+    );
+  }
+
+  return <FolioFlowGalleryInner {...props} pages={pages} />;
+}
+
+function FolioFlowGalleryInner({
   pages = folioJournalPages,
   autoPlayInterval = 6500,
 }: FolioFlowGalleryProps) {

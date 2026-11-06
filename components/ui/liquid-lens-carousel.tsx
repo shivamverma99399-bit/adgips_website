@@ -26,8 +26,24 @@ interface LiquidLensCarouselProps {
   autoPlayInterval?: number;
 }
 
-export function LiquidLensCarousel({
-  events,
+export function LiquidLensCarousel(props: LiquidLensCarouselProps) {
+  if (!props.events || props.events.length === 0) {
+    return (
+      <div className={`p-10 sm:p-14 text-center rounded-3xl bg-slate-900/60 border border-white/10 backdrop-blur-md ${props.className || ""}`}>
+        <Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-white mb-1">No Featured Events Scheduled</h3>
+        <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+          Upcoming collegiate fests, hackathons, and technical symposiums will appear here once officially published by the administration.
+        </p>
+      </div>
+    );
+  }
+
+  return <LiquidLensCarouselInner {...props} />;
+}
+
+function LiquidLensCarouselInner({
+  events = [],
   className = "",
   autoPlayInterval = 4500,
 }: LiquidLensCarouselProps) {

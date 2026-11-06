@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/navbar";
@@ -55,7 +56,9 @@ export default function RootLayout({
           <ToastProvider>
             <WaveGradient />
             <CustomCursor />
-            <Navbar />
+            <Suspense fallback={null}>
+              <Navbar />
+            </Suspense>
             <div className="flex-1 flex flex-col relative z-0">{children}</div>
             <Footer />
             <ScrollToTop />

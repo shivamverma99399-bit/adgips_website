@@ -18,6 +18,34 @@ import {
 } from "@/lib/animations";
 
 export function EventsSection() {
+  if (!eventsData || eventsData.length === 0) {
+    return (
+      <SectionContainer id="events" className="bg-transparent border-b border-white/10 py-16 sm:py-20">
+        <SectionHeading
+          pill="03 / Experience Campus Life"
+          pillVariant="secondary"
+          title="The Pulse of Campus Life &"
+          highlightText="Collegiate Fiestas"
+          description="Beyond lectures and laboratories, ADGIPS thrives with student expression. From flagship national moot court debates to annual cultural festivals, campus events will be announced here."
+          align="split"
+          action={
+            <Button variant="outline" href="/events" className="group">
+              <span>View Events Archive</span>
+              <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          }
+        />
+        <div className="p-10 sm:p-14 text-center rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-md">
+          <Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-white mb-1">No Upcoming Events Scheduled</h3>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+            Check back soon for new hackathons, cultural fests, and guest lectures once published by student councils and administration.
+          </p>
+        </div>
+      </SectionContainer>
+    );
+  }
+
   const utkarshFest = eventsData.find((e) => e.id === "utkarsh-fest") || eventsData[0];
   const aiSummit = eventsData.find((e) => e.id === "industry-ai-summit") || eventsData[1];
   const mootCourt = eventsData.find((e) => e.id === "national-moot-court") || eventsData[2];

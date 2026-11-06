@@ -15,6 +15,7 @@ import {
   Eye,
   Trash2,
   Sparkles,
+  Lock,
 } from "lucide-react";
 import { SectionContainer } from "@/components/ui/section-container";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -29,7 +30,7 @@ import { RegistrationDocument } from "@/types/backend";
 
 export default function AdminPage() {
   const { toast } = useToast();
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, isAdmin, loading, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<"event" | "notice" | "resource" | "registrations">("resource");
   const [registrations, setRegistrations] = useState<RegistrationDocument[]>([]);
   const [isLoadingRegs, setIsLoadingRegs] = useState(false);
@@ -173,6 +174,98 @@ export default function AdminPage() {
     });
   };
 
+  // 1. Loading Gate
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-24 text-white">
+        <div className="text-center space-y-4 max-w-sm p-8 rounded-3xl bg-slate-900/60 border border-white/10 backdrop-blur-md">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center mx-auto animate-pulse">
+            <ShieldCheck className="w-6 h-6 text-amber-400" />
+          </div>
+          <h2 className="text-lg font-bold text-white">Verifying Administrative Clearance</h2>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Authenticating cryptographic tokens and institutional authorization claims...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated Gate
+  if (!user) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-20 px-4 text-white">
+        <div className="text-center space-y-5 max-w-md p-8 sm:p-10 rounded-3xl bg-[#071126]/90 border border-white/15 backdrop-blur-2xl shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-400/20 flex items-center justify-center mx-auto text-amber-400">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div className="space-y-2">
+            <Badge variant="default" className="bg-amber-500/20 text-amber-300 border-amber-400/30 text-xs">
+              Authentication Required
+            </Badge>
+            <h2 className="text-2xl font-extrabold text-white tracking-tight">
+              Administrative CMS Portal
+            </h2>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              This environment is strictly restricted to authorized staff and content administrators. Please authenticate using verified credentials.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button variant="primary" size="md" href="/login" className="w-full sm:w-auto font-bold bg-blue-600 hover:bg-blue-500">
+              Sign In with Admin Credentials &rarr;
+            </Button>
+            <Button variant="outline" size="md" href="/" className="w-full sm:w-auto">
+              Return to Homepage
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Unauthorized Non-Admin Gate (403 Forbidden)
+  if (!isAdmin) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-20 px-4 text-white">
+        <div className="text-center space-y-5 max-w-md p-8 sm:p-10 rounded-3xl bg-[#071126]/90 border border-red-500/30 backdrop-blur-2xl shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-red-500/10 border border-red-400/20 flex items-center justify-center mx-auto text-red-400">
+            <AlertCircle className="w-7 h-7" />
+          </div>
+          <div className="space-y-2">
+            <Badge variant="default" className="bg-red-500/20 text-red-300 border-red-400/30 text-xs">
+              403 Forbidden
+            </Badge>
+            <h2 className="text-2xl font-extrabold text-white tracking-tight">
+              Access Denied: Insufficient Privilege
+            </h2>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Signed in as <strong className="text-white font-mono">{user.email}</strong>, but this account lacks administrative clearance.
+            </p>
+            <p className="text-[11px] text-slate-400">
+              Administrative roles and cryptographic claims are provisioned by the Systems Administrator.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button
+              variant="outline"
+              size="md"
+              onClick={async () => {
+                await logout();
+                window.location.href = "/login";
+              }}
+              className="w-full sm:w-auto font-bold border-red-500/30 hover:bg-red-500/10 text-red-200"
+            >
+              Sign Out & Switch Account
+            </Button>
+            <Button variant="white" size="md" href="/" className="w-full sm:w-auto font-semibold">
+              Return to Homepage
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 bg-transparent pt-2 pb-12">
       <SectionContainer className="py-0 md:py-0 pt-1 md:pt-1 pb-8">
@@ -197,10 +290,25 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="white" size="sm" href="/dashboard">
-              Student Dashboard
+            <div className="hidden sm:flex flex-col text-right">
+              <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1 justify-end">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Verified Administrator
+              </span>
+              <span className="text-[11px] text-slate-400 font-mono truncate max-w-[200px]">{user.email}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await logout();
+                window.location.href = "/login";
+              }}
+              className="text-xs"
+            >
+              Sign Out
             </Button>
-            <Button variant="outline" size="sm" href="/">
+            <Button variant="white" size="sm" href="/">
               View Site &rarr;
             </Button>
           </div>
@@ -553,32 +661,11 @@ export default function AdminPage() {
                       </tr>
                     ))
                   ) : (
-                    <>
-                      <tr>
-                        <td className="py-2.5 px-3 font-semibold text-white">Aryan Sharma</td>
-                        <td className="py-2.5 px-3 font-mono text-blue-300">04215602722</td>
-                        <td className="py-2.5 px-3">Utkarsh 2026 — Annual Cultural Fest</td>
-                        <td className="py-2.5 px-3 text-slate-400">B.Tech AI&ML (Sem 6)</td>
-                        <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
-                        <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 px-3 font-semibold text-white">Aryan Sharma</td>
-                        <td className="py-2.5 px-3 font-mono text-blue-300">04215602722</td>
-                        <td className="py-2.5 px-3">Generative AI & Agentic Systems Seminar</td>
-                        <td className="py-2.5 px-3 text-slate-400">B.Tech AI&ML (Sem 6)</td>
-                        <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
-                        <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 px-3 font-semibold text-white">Simran Kaur</td>
-                        <td className="py-2.5 px-3 font-mono text-blue-300">01815603822</td>
-                        <td className="py-2.5 px-3">National Moot Court Competition 2026</td>
-                        <td className="py-2.5 px-3 text-slate-400">B.A. LL.B. (Sem 8)</td>
-                        <td className="py-2.5 px-3"><span className="text-emerald-400 font-bold">Confirmed</span></td>
-                        <td className="py-2.5 px-3"><span className="text-slate-400">Sanctioned</span></td>
-                      </tr>
-                    </>
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                        No event registrations recorded yet. Real student registrations will populate here in real-time.
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>

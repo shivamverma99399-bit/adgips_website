@@ -11,7 +11,6 @@ import { SearchModal } from "@/components/ui/search-modal";
 import { MobileNavigation } from "./mobile-navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers/auth-provider";
-import { getStoredSession } from "@/lib/auth";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -19,11 +18,8 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { user, profile } = useAuth();
-  const [storedSession, setStoredSession] = useState<any>(null);
 
   useEffect(() => {
-    setStoredSession(getStoredSession());
-
     const handleScroll = () => {
       if (window.scrollY > 20) {
         setScrolled(true);
@@ -32,21 +28,10 @@ export function Navbar() {
       }
     };
 
-    const handleSessionChange = () => {
-      setStoredSession(getStoredSession());
-    };
-
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("adgips_session_change", handleSessionChange);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("adgips_session_change", handleSessionChange);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const session = profile || user || storedSession;
 
   const navLinks = [
     { label: "Home", href: "/" },
@@ -54,8 +39,6 @@ export function Navbar() {
     { label: "Activities", href: "/activities" },
     { label: "Resources", href: "/resources" },
     { label: "Gallery", href: "/gallery" },
-    { label: "Dashboard", href: "/dashboard" },
-    { label: "Admin", href: "/admin" },
   ];
 
   return (
@@ -129,28 +112,26 @@ export function Navbar() {
               </kbd>
             </motion.button>
 
-            {/* Student Login / Dashboard CTA */}
-            {session ? (
+            {/* Admin CMS Access */}
+            {user ? (
               <Button
                 variant="primary"
                 size="sm"
-                href="/dashboard"
+                href="/admin"
                 className="hidden sm:inline-flex shadow-sm shadow-blue-500/20 font-semibold"
               >
-                <div className="w-4 h-4 rounded-full bg-white/20 text-[10px] font-bold flex items-center justify-center mr-1.5">
-                  {(session.name || session.displayName || session.email || "S")[0].toUpperCase()}
-                </div>
-                <span>Dashboard</span>
+                <ShieldCheck className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+                <span>Admin CMS</span>
               </Button>
             ) : (
               <Button
-                variant="primary"
+                variant="outline"
                 size="sm"
                 href="/login"
-                className="hidden sm:inline-flex shadow-sm shadow-blue-500/20"
+                className="hidden sm:inline-flex border-white/20 hover:border-blue-400/50 text-xs"
               >
-                <User className="w-3.5 h-3.5 mr-1" />
-                <span>Student Login</span>
+                <ShieldCheck className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                <span>Admin Portal</span>
               </Button>
             )}
 

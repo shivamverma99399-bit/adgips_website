@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { initialResourcesData, AcademicResource } from "@/data/resources";
-import { downloadAcademicResource } from "@/lib/download-resource";
 import {
   sectionVariants,
   staggerContainer,
@@ -29,16 +28,23 @@ import {
 
 export function LearnGrowSection() {
   const { toast } = useToast();
-  // Select 4 high-demand flagship resources
   const featuredResources = initialResourcesData.slice(0, 4);
 
   const handleDownload = (res: AcademicResource) => {
-    downloadAcademicResource(res);
-    toast({
-      title: "Handout Saved to Device",
-      description: `Downloaded ${res.code} — ${res.title}. Saved in your student dashboard history.`,
-      type: "success",
-    });
+    if (res.fileUrl) {
+      window.open(res.fileUrl, "_blank");
+      toast({
+        title: "Download Initiated",
+        description: `Accessing ${res.code} — ${res.title}.`,
+        type: "success",
+      });
+    } else {
+      toast({
+        title: "Curriculum Repository",
+        description: `Official document for ${res.code} will be available for download once indexed by faculty.`,
+        type: "info",
+      });
+    }
   };
 
   return (
@@ -65,7 +71,7 @@ export function LearnGrowSection() {
         />
       </motion.div>
 
-      {/* 4 Curated Resource Modules */}
+      {/* Curated Resource Modules or Empty State */}
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -73,13 +79,22 @@ export function LearnGrowSection() {
         variants={staggerContainer}
         className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"
       >
-        {featuredResources.map((res) => (
-          <motion.div
-            key={res.id}
-            variants={staggerItem}
-            whileHover={{ y: -4, transition: cardHoverTransition }}
-            className="p-5 rounded-3xl bg-slate-900/60 backdrop-blur-md border border-white/10 hover:border-blue-400/40 hover:bg-slate-900/80 transition-all shadow-lg flex flex-col justify-between text-white space-y-4 group"
-          >
+        {featuredResources.length === 0 ? (
+          <div className="col-span-full p-10 text-center rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-md">
+            <Library className="w-8 h-8 text-slate-500 mx-auto mb-2" />
+            <p className="text-sm font-bold text-white mb-1">Knowledge Commons Repository</p>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Official GGSIPU end-term PYQs, lab manuals, and syllabus schemes will be accessible here as indexed by departmental faculty.
+            </p>
+          </div>
+        ) : (
+          featuredResources.map((res) => (
+            <motion.div
+              key={res.id}
+              variants={staggerItem}
+              whileHover={{ y: -4, transition: cardHoverTransition }}
+              className="p-5 rounded-3xl bg-slate-900/60 backdrop-blur-md border border-white/10 hover:border-blue-400/40 hover:bg-slate-900/80 transition-all shadow-lg flex flex-col justify-between text-white space-y-4 group"
+            >
             <div>
               {/* Top Badges */}
               <div className="flex items-center justify-between gap-2 mb-2.5">
@@ -128,7 +143,7 @@ export function LearnGrowSection() {
               </button>
             </div>
           </motion.div>
-        ))}
+        )))}
       </motion.div>
 
       {/* Central E-Library Quick Link Banner */}

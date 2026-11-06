@@ -17,7 +17,6 @@ import { opportunitiesData } from "@/data/opportunities";
 import { announcementsData } from "@/data/announcements";
 import { initialResourcesData, AcademicResource } from "@/data/resources";
 import { Badge } from "./badge";
-import { downloadAcademicResource } from "@/lib/download-resource";
 import { useToast } from "./toast";
 
 interface SearchModalProps {
@@ -252,21 +251,14 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         {res.stream} • {res.semester} • {res.type}
                       </p>
                     </Link>
-                    <button
-                      onClick={() => {
-                        downloadAcademicResource(res);
-                        toast({
-                          title: "Downloading Resource",
-                          description: `${res.code} - ${res.title} saved.`,
-                          type: "success",
-                        });
-                        handleClose();
-                      }}
+                    <Link
+                      href="/resources"
+                      onClick={handleClose}
                       className="p-2 rounded-lg bg-white/10 hover:bg-emerald-600 text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
-                      title="Download Resource"
+                      title="View Academic Resource"
                     >
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 ))}
               </div>

@@ -39,8 +39,7 @@ export function MobileNavigation({
     { label: "Activities", href: "/activities", icon: Compass, badge: "Clubs" },
     { label: "Resources", href: "/resources", icon: BookOpen },
     { label: "Gallery", href: "/gallery", icon: ImageIcon },
-    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Admin CMS", href: "/admin", icon: ShieldCheck, badge: "Admin" },
+    { label: "Admin CMS", href: "/admin", icon: ShieldCheck, badge: "Staff" },
   ];
 
   return (
@@ -146,12 +145,12 @@ export function MobileNavigation({
               <Button
                 variant="primary"
                 size="md"
-                href="/dashboard"
+                href="/login"
                 className="w-full justify-center shadow-lg shadow-blue-600/25"
                 onClick={onClose}
               >
-                <UserCheck className="w-4 h-4 mr-2" />
-                Student Dashboard
+                <ShieldCheck className="w-4 h-4 mr-2" />
+                Admin Portal Login
               </Button>
 
               <a

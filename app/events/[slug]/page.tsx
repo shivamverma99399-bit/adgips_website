@@ -30,11 +30,7 @@ interface EventDetailPageProps {
   }>;
 }
 
-export async function generateStaticParams() {
-  return eventsData.map((evt) => ({
-    slug: evt.slug,
-  }));
-}
+export const instant = false;
 
 export async function generateMetadata({
   params,

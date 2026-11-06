@@ -1,68 +1,7 @@
 import { GalleryItem } from "@/types";
 
-export const galleryData: GalleryItem[] = [
-  {
-    id: "gal-01",
-    title: "ADGIPS Main Academic Complex — Shastri Park",
-    category: "Campus",
-    image: "/images/campus-main.png",
-    description: "The striking red brick and stone circular architectural blocks across the 8.08-acre campus in East Delhi.",
-    aspect: "wide",
-  },
-  {
-    id: "gal-02",
-    title: "Advanced Systems & Computing Lab",
-    category: "Technical",
-    image: "/images/engineering.jpg",
-    description: "Gigabit-speed computing laboratories configured with high-performance clusters for AI, Data Science and Systems Engineering.",
-    aspect: "square",
-  },
-  {
-    id: "gal-03",
-    title: "Central Research & Digital Library",
-    category: "Academic",
-    image: "/images/library.jpg",
-    description: "Spacious multi-tiered learning commons holding over 85,000 volumes, international journals, and digital research bays.",
-    aspect: "square",
-  },
-  {
-    id: "gal-04",
-    title: "School of Law — Moot Court Hall",
-    category: "Academic",
-    image: "/images/law-moot-court.jpg",
-    description: "State-of-the-art trial simulation chamber where student advocates prepare for national and international advocacy rounds.",
-    aspect: "square",
-  },
-  {
-    id: "gal-05",
-    title: "Utkarsh Cultural Fiesta & Open Air Theatre",
-    category: "Cultural",
-    image: "/images/cultural-fest.jpg",
-    description: "Annual cultural extravaganza uniting thousands of student participants across dance, drama, and live music.",
-    aspect: "wide",
-  },
-  {
-    id: "gal-06",
-    title: "Campus Athletic Grounds & Sports Arena",
-    category: "Sports",
-    image: "/images/sports.jpg",
-    description: "Outdoor sporting grounds for football, volleyball, kabaddi, and athletic tournaments fostering collegiate sportsmanship.",
-    aspect: "square",
-  },
-  {
-    id: "gal-07",
-    title: "National Tech Symposium & Paper Presentations",
-    category: "Technical",
-    image: "/images/hackathon.jpg",
-    description: "Annual technical paper presentation and project display by student researchers and IEEE student branch members.",
-    aspect: "square",
-  },
-  {
-    id: "gal-08",
-    title: "Hackathons & Innovation Sprint Sessions",
-    category: "Technical",
-    image: "/images/hackathon.jpg",
-    description: "Intense collaborative hacking sprints where student innovators build functional prototypes and open-source applications.",
-    aspect: "wide",
-  },
-];
+/**
+ * Campus Gallery Archival Dataset
+ * Left empty until genuine event and campus photographs are published through the CMS.
+ */
+export const galleryData: GalleryItem[] = [];

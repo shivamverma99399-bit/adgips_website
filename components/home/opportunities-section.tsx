@@ -55,7 +55,28 @@ export function OpportunitiesSection() {
     }
   };
 
-  const spotlightOpp = opportunitiesData[0]; // SIH 2026 Ideathon
+  if (!opportunitiesData || opportunitiesData.length === 0) {
+    return (
+      <SectionContainer id="opportunities" className="bg-transparent border-b border-white/10 py-16 sm:py-20">
+        <SectionHeading
+          pill="04 / Find Your Next Opportunity"
+          pillVariant="secondary"
+          title="Hackathons, Internships &"
+          highlightText="Innovation Sprints"
+          description="Explore national hackathons, government ideathons, corporate technical internships, and collegiate competitions open to ADGIPS students."
+        />
+        <div className="p-10 sm:p-14 text-center rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-md">
+          <Award className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-white mb-1">No Active Opportunities Listed</h3>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+            Upcoming corporate internships, national hackathons, and technical competitions will appear here once published by the Corporate Resource Centre.
+          </p>
+        </div>
+      </SectionContainer>
+    );
+  }
+
+  const spotlightOpp = opportunitiesData[0];
   const listOpps = opportunitiesData.slice(1, 5);
 
   return (

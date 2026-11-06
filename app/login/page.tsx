@@ -11,9 +11,9 @@ import {
   EyeOff,
   ArrowRight,
   ShieldCheck,
-  UserPlus,
   LogIn,
   AlertCircle,
+  Sparkles,
 } from "lucide-react";
 import { CollegeLogo } from "@/components/ui/college-logo";
 import { Button } from "@/components/ui/button";
@@ -43,34 +43,32 @@ function GoogleLogo({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
-function formatAuthError(error: any): string {
-  const code = error?.code || "";
+function formatAuthError(error: unknown): string {
+  const err = error as { code?: string; message?: string };
+  const code = err?.code || "";
   switch (code) {
     case "auth/invalid-credential":
     case "auth/wrong-password":
     case "auth/user-not-found":
-      return "Invalid email or password. Please verify your credentials.";
-    case "auth/email-already-in-use":
-      return "An account with this email already exists. Please sign in instead.";
+      return "Invalid email or password. Please verify your administrative credentials.";
     case "auth/weak-password":
-      return "Password should be at least 6 characters long.";
+      return "Password must be at least 6 characters long.";
     case "auth/invalid-email":
-      return "Please enter a valid email address.";
+      return "Please enter a valid administrative email address.";
     case "auth/popup-closed-by-user":
       return "Google Sign-In was cancelled.";
     case "auth/network-request-failed":
-      return "Network error. Please check your internet connection.";
+      return "Network error. Please verify your internet connection.";
     default:
-      return error?.message || "Authentication failed. Please try again.";
+      return err?.message || "Authentication failed. Please check your credentials.";
   }
 }
 
 export default function LoginPage() {
   const router = useRouter();
-  const { loginWithGoogle, loginWithEmail, signupWithEmail, resetPassword } = useAuth();
+  const { loginWithGoogle, loginWithEmail, resetPassword, user, isAdmin, logout } = useAuth();
   const { toast } = useToast();
 
-  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -78,22 +76,29 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // If already authenticated as an admin, allow direct access
+  React.useEffect(() => {
+    if (user && isAdmin) {
+      router.push("/admin");
+    }
+  }, [user, isAdmin, router]);
+
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
       await loginWithGoogle();
       toast({
-        title: "Google Sign-In Successful",
-        description: "Welcome to the ADGIPS Student Portal!",
+        title: "Session Authenticated",
+        description: "Checking administrative credentials...",
         type: "success",
       });
-      router.push("/dashboard");
-    } catch (err: any) {
+      router.push("/admin");
+    } catch (err: unknown) {
       const msg = formatAuthError(err);
       setErrorMessage(msg);
       toast({
-        title: "Sign-In Error",
+        title: "Authentication Error",
         description: msg,
         type: "error",
       });
@@ -113,27 +118,18 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     try {
-      if (isSignUp) {
-        await signupWithEmail(email, password);
-        toast({
-          title: "Account Created!",
-          description: "Your student profile has been initialized.",
-          type: "success",
-        });
-      } else {
-        await loginWithEmail(email, password);
-        toast({
-          title: "Authentication Successful",
-          description: `Welcome back, ${email}!`,
-          type: "success",
-        });
-      }
-      router.push("/dashboard");
-    } catch (err: any) {
+      await loginWithEmail(email, password);
+      toast({
+        title: "Session Authenticated",
+        description: `Signed in as ${email}.`,
+        type: "success",
+      });
+      router.push("/admin");
+    } catch (err: unknown) {
       const msg = formatAuthError(err);
       setErrorMessage(msg);
       toast({
-        title: isSignUp ? "Sign Up Error" : "Sign In Error",
+        title: "Sign-In Error",
         description: msg,
         type: "error",
       });
@@ -146,7 +142,7 @@ export default function LoginPage() {
     if (!email) {
       toast({
         title: "Email Required",
-        description: "Please enter your Gmail address in the field above to receive a reset link.",
+        description: "Please enter your administrator email address above to receive a reset link.",
         type: "info",
       });
       return;
@@ -159,7 +155,7 @@ export default function LoginPage() {
         description: `A reset link has been dispatched to ${email}.`,
         type: "success",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: "Reset Failed",
         description: formatAuthError(err),
@@ -181,21 +177,19 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <CollegeLogo variant="dark" linkToHome={false} showSubtitle={false} />
           </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-xs font-semibold text-blue-300">
-            <GoogleLogo className="w-3.5 h-3.5" />
-            <span>Google Workspace & SSO</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-400/20 text-xs font-semibold text-amber-300">
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            <span>Administrator & Staff Portal</span>
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            {isSignUp ? "Create Student Account" : "Sign in to IPVERSE"}
+            Institutional CMS Sign-In
           </h1>
           <p className="text-xs text-slate-300">
-            {isSignUp
-              ? "Register with your student email to access campus passes, societies, and attendance."
-              : "Use your Gmail address or ADGIPS Google Workspace account to access the student portal."}
+            Sign in with your verified administrative credentials to publish events, official circulars, and academic resources.
           </p>
         </div>
 
-        {/* Primary One-Click "Continue with Google" Button */}
+        {/* Primary One-Click "Continue with Google Workspace" Button */}
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -205,17 +199,39 @@ export default function LoginPage() {
           className="w-full py-3 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm shadow-xl flex items-center justify-center gap-3 transition-all cursor-pointer border border-white/20 disabled:opacity-50"
         >
           <GoogleLogo className="w-5 h-5" />
-          <span>Continue with Google</span>
+          <span>Sign In with Google Workspace</span>
         </motion.button>
 
         {/* Crisp Divider */}
         <div className="relative flex items-center justify-center my-3">
           <div className="border-t border-white/10 w-full" />
           <span className="bg-[#071126] px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">
-            or {isSignUp ? "register with email" : "sign in with email"}
+            or sign in with credentials
           </span>
           <div className="border-t border-white/10 w-full" />
         </div>
+
+        {/* Non-Admin Notice if already logged in */}
+        {user && !isAdmin && (
+          <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-400/30 text-amber-200 text-xs space-y-2">
+            <div className="flex items-center gap-2 font-bold text-amber-300">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Insufficient Administrative Clearance</span>
+            </div>
+            <p>
+              You are authenticated as <strong className="text-white font-mono">{user.email}</strong>, but this account has not been provisioned with administrator role claims.
+            </p>
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+              }}
+              className="text-amber-400 hover:underline font-bold cursor-pointer"
+            >
+              Sign out and use a different account &rarr;
+            </button>
+          </div>
+        )}
 
         {/* Error banner if present */}
         <AnimatePresence>
@@ -234,30 +250,28 @@ export default function LoginPage() {
 
         {/* Form: Email & Password */}
         <form onSubmit={handleEmailAuth} className="space-y-4">
-          {/* Email Address Field */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Gmail / College Email Address
+              Administrator Email
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <Mail className="w-4 h-4 text-red-400" />
+                <Mail className="w-4 h-4 text-amber-400" />
               </div>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="scholar@gmail.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/15 bg-white/10 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white/15 transition-all"
+                placeholder="admin@adgips-delhi.ac.in"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/15 bg-white/10 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white/15 transition-all"
               />
             </div>
           </div>
 
-          {/* Password Field */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Password {isSignUp && <span className="text-[11px] text-slate-400 font-normal">(min. 6 characters)</span>}
+              Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -268,8 +282,8 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-white/15 bg-white/10 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white/15 transition-all"
+                placeholder="Enter password"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-white/15 bg-white/10 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white/15 transition-all"
               />
               <button
                 type="button"
@@ -282,77 +296,57 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Options Row */}
           <div className="flex items-center justify-between text-xs">
             <label className="flex items-center gap-2 cursor-pointer text-slate-300">
               <input
                 type="checkbox"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="rounded text-blue-600 focus:ring-blue-500 bg-white/10 border-white/20"
+                className="rounded text-amber-600 focus:ring-amber-500 bg-white/10 border-white/20"
               />
-              <span>Stay signed in</span>
+              <span>Keep session active</span>
             </label>
-            {!isSignUp && (
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="text-blue-400 hover:text-blue-300 font-semibold cursor-pointer"
-              >
-                Forgot password?
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-amber-400 hover:text-amber-300 font-semibold cursor-pointer"
+            >
+              Reset credentials
+            </button>
           </div>
 
-          {/* Sign In / Sign Up Submit Button */}
           <Button
             type="submit"
             variant="primary"
             size="lg"
-            className="w-full justify-center shadow-lg shadow-blue-600/30 cursor-pointer font-bold"
+            className="w-full justify-center shadow-lg shadow-blue-600/30 cursor-pointer font-bold bg-blue-600 hover:bg-blue-500"
             disabled={isLoading}
           >
             {isLoading ? (
               <span>Authenticating...</span>
-            ) : isSignUp ? (
-              <span className="flex items-center gap-2">
-                <UserPlus className="w-4 h-4" />
-                <span>Create Student Account</span>
-                <ArrowRight className="w-4 h-4" />
-              </span>
             ) : (
               <span className="flex items-center gap-2">
                 <LogIn className="w-4 h-4" />
-                <span>Sign In to Dashboard</span>
+                <span>Sign In to Admin CMS</span>
                 <ArrowRight className="w-4 h-4" />
               </span>
             )}
           </Button>
         </form>
 
-        {/* Toggle between Sign In and Sign Up */}
-        <div className="text-center pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setErrorMessage(null);
-            }}
-            className="text-xs text-slate-300 hover:text-white transition-colors cursor-pointer"
-          >
-            {isSignUp ? (
-              <span>Already registered? <strong className="text-blue-400 hover:underline">Sign In here</strong></span>
-            ) : (
-              <span>New to IPVERSE? <strong className="text-blue-400 hover:underline">Create a student account</strong></span>
-            )}
-          </button>
+        {/* Public Visitor Notice */}
+        <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-slate-400 text-center space-y-1">
+          <p className="text-slate-300 font-medium">Public Scholar or Visitor?</p>
+          <p className="text-[11px]">
+            All institutional campus schedules, event archives, academic PYQs, and notices are publicly open without requiring an account.
+          </p>
         </div>
 
         {/* Support Footer & Security Notice */}
-        <div className="text-center text-xs text-slate-400 pt-3 border-t border-white/10 space-y-1.5">
+        <div className="text-center text-xs text-slate-400 pt-2 border-t border-white/10 space-y-1.5">
           <p className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Protected by Google Identity Services & Firebase Auth</span>
+            <span>Authorized Faculty & Administrator Access Only</span>
           </p>
           <div>
             <Link href="/" className="text-blue-400 hover:underline font-semibold inline-block">

@@ -33,12 +33,13 @@ async function setRole(identifier: string, role: "admin" | "student" | "society_
     );
 
     console.log(`✅ Success: User ${userRecord.email} (${userRecord.uid}) has been granted role "${role}".`);
-  } catch (err: any) {
-    console.error("❌ Failed to update user role:", err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error("❌ Failed to update user role:", error.message);
     process.exit(1);
   }
 }
 
 const targetUser = process.argv[2];
-const roleArg = (process.argv[3] as any) || "admin";
+const roleArg = (process.argv[3] as "admin" | "student" | "society_member" | "moderator") || "admin";
 setRole(targetUser, roleArg);

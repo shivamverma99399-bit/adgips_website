@@ -127,25 +127,33 @@ export function AnnouncementsSection() {
                 <Calendar className="w-3.5 h-3.5 text-blue-400" />
                 <span>Active Notices ({filteredAnnouncements.length})</span>
               </div>
-              <Badge variant="demo" className="text-[10px]">
-                Official Content Mode
+              <Badge variant="outline" className="text-[10px]">
+                Official Feed
               </Badge>
             </div>
 
-            {/* Notice Items with Stagger Animation */}
-            <motion.div
-              key={activeTab}
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="space-y-3"
-            >
-              {filteredAnnouncements.map((item) => (
-                <motion.div key={item.id} variants={staggerItem}>
-                  <AnnouncementItemComponent announcement={item} />
-                </motion.div>
-              ))}
-            </motion.div>
+            {/* Notice Items with Stagger Animation or Empty State */}
+            {filteredAnnouncements.length === 0 ? (
+              <div className="p-8 text-center rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-xs">
+                <Bell className="w-6 h-6 mx-auto mb-2 text-slate-500" />
+                <p className="font-semibold text-slate-300">No official circulars published at this time.</p>
+                <p className="mt-1 text-slate-500">New circulars will appear here as released by the Academic and Examination Cell.</p>
+              </div>
+            ) : (
+              <motion.div
+                key={activeTab}
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                className="space-y-3"
+              >
+                {filteredAnnouncements.map((item) => (
+                  <motion.div key={item.id} variants={staggerItem}>
+                    <AnnouncementItemComponent announcement={item} />
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
 
             {/* Notice Footer Note */}
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
